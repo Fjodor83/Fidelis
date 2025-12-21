@@ -1,0 +1,127 @@
+﻿@* Fidelity.Client/Pages/LoginResponsabile.razor *@
+@page "/login-responsabile"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Login Responsabile - Suns</PageTitle>
+
+<div class="min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-dark text-white text-center py-4">
+                        <h3 class="mb-0">🔐 Area Responsabili</h3>
+                        <p class="mb-0 small">Suns - Zero & Company</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <EditForm Model="@loginRequest" OnValidSubmit="@Login">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Username / Codice Punto Vendita</label>
+                                <InputText @bind-Value="loginRequest.Username" 
+                                           class="form-control form-control-lg" 
+                                           placeholder="SU01" />
+                                <ValidationMessage For="@(() => loginRequest.Username)" class="text-danger" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Password</label>
+                                <InputText @bind-Value="loginRequest.Password" 
+                                           type="password"
+                                           class="form-control form-control-lg" />
+                                <ValidationMessage For="@(() => loginRequest.Password)" class="text-danger" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(messaggioErrore))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle"></i> @messaggioErrore
+                                </div>
+                            }
+
+                            <button type="submit" 
+                                    class="btn btn-dark btn-lg w-100" 
+                                    disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <span>Accesso...</span>
+                                }
+                                else
+                                {
+                                    <span>Accedi</span>
+                                }
+                            </button>
+                        </EditForm>
+
+                        <div class="text-center mt-4">
+                            <small class="text-muted">
+                                Password dimenticata? Contatta l'amministratore.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="/" class="text-muted small">← Torna alla home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private bool isLoading = false;
+    private string messaggioErrore = "";
+
+    private async Task Login()
+    {
+        isLoading = true;
+        messaggioErrore = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginRequest);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                
+                // Salva token in localStorage
+                await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                await JS.InvokeVoidAsync("localStorage.setItem", "username", result.Username);
+                await JS.InvokeVoidAsync("localStorage.setItem", "ruolo", result.Ruolo);
+                await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", result.NomeCompleto);
+                await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaId", result.PuntoVenditaId?.ToString() ?? "");
+                await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaCodice", result.PuntoVenditaCodice ?? "");
+                
+                // Redirect
+                if (result.RichiestaResetPassword)
+                {
+                    Navigation.NavigateTo("/cambia-password");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/dashboard");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                messaggioErrore = error?.Messaggio ?? "Credenziali non valide.";
+            }
+        }
+        catch
+        {
+            messaggioErrore = "Errore di connessione. Riprova.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
+

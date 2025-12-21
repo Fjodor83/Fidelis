@@ -1,0 +1,272 @@
+﻿@* Fidelity.Client/Pages/Dashboard.razor *@
+@page "/dashboard"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Dashboard - Suns</PageTitle>
+
+<div class="min-vh-100" style="background-color: #f8f9fa;">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">☀️ Suns Dashboard</span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-white">
+                    <i class="bi bi-person-circle"></i> @nomeCompleto
+                    @if (!string.IsNullOrEmpty(puntoVenditaCodice))
+                    {
+                        <span class="badge bg-light text-dark ms-2">@puntoVenditaCodice</span>
+                    }
+                </span>
+                <button class="btn btn-outline-light btn-sm" @onclick="Logout">
+                    <i class="bi bi-box-arrow-right"></i> Esci
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            
+            <!-- Card Registra Nuovo Cliente -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0 hover-card" @onclick="() => mostraRegistrazione = true" style="cursor: pointer;">
+                    <div class="card-body text-center p-4">
+                        <div class="mb-3" style="font-size: 3rem;">👤</div>
+                        <h5 class="card-title">Registra Nuovo Cliente</h5>
+                        <p class="text-muted small">Inserisci l'email del cliente per iniziare</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Cerca Cliente -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-3" style="font-size: 2.5rem;">🔍</div>
+                        <h5 class="card-title text-center mb-3">Cerca Cliente</h5>
+                        <input @bind="ricercaCliente" 
+                               @bind:event="oninput"
+                               @onkeyup="CercaCliente"
+                               class="form-control" 
+                               placeholder="Codice o Email" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Statistiche -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-3" style="font-size: 2.5rem;">📊</div>
+                        <h5 class="card-title text-center">Statistiche</h5>
+                        <div class="text-center">
+                            <h3 class="mb-0">@totaleClienti</h3>
+                            <small class="text-muted">Clienti registrati</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Modal Registrazione -->
+        @if (mostraRegistrazione)
+        {
+            <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h5 class="modal-title text-white">Registra Nuovo Cliente</h5>
+                            <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Email Cliente</label>
+                                <input @bind="emailRegistrazione" 
+                                       type="email"
+                                       class="form-control form-control-lg" 
+                                       placeholder="cliente@example.com" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(messaggioRegistrazione))
+                            {
+                                <div class="alert @(registrazioneSuccess ? "alert-success" : "alert-danger")">
+                                    @messaggioRegistrazione
+                                </div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" @onclick="ChiudiModal">Annulla</button>
+                            <button class="btn btn-primary" @onclick="InviaRegistrazione" disabled="@isInvio">
+                                @if (isInvio)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Invia Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Risultato Ricerca Cliente -->
+        @if (clienteTrovato != null)
+        {
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Cliente Trovato</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Nome:</strong> @clienteTrovato.NomeCompleto</p>
+                                    <p><strong>Email:</strong> @clienteTrovato.Email</p>
+                                    <p><strong>Telefono:</strong> @clienteTrovato.Telefono</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Codice:</strong> @clienteTrovato.CodiceFidelity</p>
+                                    <p><strong>Punti:</strong> @clienteTrovato.PuntiTotali</p>
+                                    <p><strong>Registrato:</strong> @clienteTrovato.DataRegistrazione.ToString("dd/MM/yyyy")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.2s;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+
+@code {
+    private string nomeCompleto = "";
+    private string puntoVenditaCodice = "";
+    private int puntoVenditaId = 0;
+    private string authToken = "";
+
+    private bool mostraRegistrazione = false;
+    private string emailRegistrazione = "";
+    private bool isInvio = false;
+    private string messaggioRegistrazione = "";
+    private bool registrazioneSuccess = false;
+
+    private string ricercaCliente = "";
+    private ClienteResponse? clienteTrovato = null;
+    private int totaleClienti = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Recupera dati da localStorage
+        nomeCompleto = await JS.InvokeAsync<string>("localStorage.getItem", "nomeCompleto");
+        puntoVenditaCodice = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaCodice");
+        authToken = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var pvIdStr = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaId");
+        int.TryParse(pvIdStr, out puntoVenditaId);
+
+        if (string.IsNullOrEmpty(authToken))
+        {
+            Navigation.NavigateTo("/login-responsabile");
+            return;
+        }
+
+        // Configura HttpClient con token
+        Http.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+
+        await CaricaStatistiche();
+    }
+
+    private async Task CaricaStatistiche()
+    {
+        try
+        {
+            var clienti = await Http.GetFromJsonAsync<List<ClienteResponse>>("api/clienti/mio-punto-vendita");
+            totaleClienti = clienti?.Count ?? 0;
+        }
+        catch { }
+    }
+
+    private async Task InviaRegistrazione()
+    {
+        isInvio = true;
+        messaggioRegistrazione = "";
+        registrazioneSuccess = false;
+
+        try
+        {
+            var request = new VerificaEmailRequest 
+            { 
+                Email = emailRegistrazione,
+                PuntoVenditaId = puntoVenditaId
+            };
+
+            var response = await Http.PostAsJsonAsync("api/registrazione/verifica-email", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<VerificaEmailResponse>();
+                messaggioRegistrazione = result.Messaggio;
+                registrazioneSuccess = true;
+                emailRegistrazione = "";
+                await CaricaStatistiche();
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<VerificaEmailResponse>();
+                messaggioRegistrazione = error?.Messaggio ?? "Errore durante la registrazione.";
+            }
+        }
+        catch
+        {
+            messaggioRegistrazione = "Errore di connessione.";
+        }
+        finally
+        {
+            isInvio = false;
+        }
+    }
+
+    private async Task CercaCliente()
+    {
+        if (string.IsNullOrWhiteSpace(ricercaCliente) || ricercaCliente.Length < 3)
+        {
+            clienteTrovato = null;
+            return;
+        }
+
+        try
+        {
+            clienteTrovato = await Http.GetFromJsonAsync<ClienteResponse>($"api/clienti/cerca?query={ricercaCliente}");
+        }
+        catch
+        {
+            clienteTrovato = null;
+        }
+    }
+
+    private void ChiudiModal()
+    {
+        mostraRegistrazione = false;
+        messaggioRegistrazione = "";
+        emailRegistrazione = "";
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.clear");
+        Navigation.NavigateTo("/");
+    }
+}

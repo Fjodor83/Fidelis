@@ -1,0 +1,6 @@
+@Fidelity.Server_HostAddress = http://localhost:5085
+
+GET {{Fidelity.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

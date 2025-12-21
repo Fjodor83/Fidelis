@@ -1,0 +1,260 @@
+﻿@* Fidelity.Client/Pages/CompletaRegistrazione.razor *@
+@page "/registrazione/{token}"
+@page "/completa-registrazione"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Completa Registrazione - Suns</PageTitle>
+
+<div class="min-vh-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                
+                @if (string.IsNullOrEmpty(Token))
+                {
+                    <div class="card shadow border-0">
+                        <div class="card-body p-5 text-center">
+                            <h3 class="mb-4">Inserisci il tuo codice</h3>
+                            <p class="text-muted">Hai ricevuto un'email con un link di registrazione. Se non riesci ad aprirlo, inserisci qui il codice di 16 caratteri.</p>
+                            
+                            <div class="mb-4">
+                                <input @bind="tokenManuale" 
+                                       class="form-control form-control-lg text-center" 
+                                       placeholder="ABCD1234EFGH5678"
+                                       maxlength="16"
+                                       style="letter-spacing: 3px;" />
+                            </div>
+
+                            <button @onclick="() => Navigation.NavigateTo($'/registrazione/{tokenManuale}')" 
+                                    class="btn btn-primary btn-lg"
+                                    disabled="@(string.IsNullOrWhiteSpace(tokenManuale) || tokenManuale.Length != 16)">
+                                Continua
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (isValidating)
+                {
+                    <div class="card shadow border-0">
+                        <div class="card-body p-5 text-center">
+                            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                            <p class="text-muted">Verifica token in corso...</p>
+                        </div>
+                    </div>
+                }
+                else if (!tokenValido)
+                {
+                    <div class="card shadow border-0 border-danger">
+                        <div class="card-body p-5 text-center">
+                            <i class="bi bi-x-circle text-danger" style="font-size: 4rem;"></i>
+                            <h3 class="mt-3">Token non valido</h3>
+                            <p class="text-muted">Il link potrebbe essere scaduto (15 minuti) o già utilizzato.</p>
+                            <p>Per ricevere un nuovo link, recati presso il punto vendita.</p>
+                            <a href="/" class="btn btn-primary mt-3">Torna alla home</a>
+                        </div>
+                    </div>
+                }
+                else if (registrazioneCompletata)
+                {
+                    <div class="card shadow border-0 border-success">
+                        <div class="card-body p-5 text-center">
+                            <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+                            <h2 class="mt-4">Registrazione Completata!</h2>
+                            <p class="lead">Benvenuto nel programma fedeltà Suns!</p>
+                            
+                            <div class="alert alert-success mt-4">
+                                <h4 class="mb-2">Il tuo codice Fidelity:</h4>
+                                <h2 class="fw-bold" style="letter-spacing: 3px;">@codiceFidelity</h2>
+                            </div>
+
+                            <p class="text-muted">
+                                Ti abbiamo inviato un'email con la tua card digitale completa di QR code. 
+                                Salvala sul tuo smartphone e mostrarla ad ogni acquisto!
+                            </p>
+
+                            <div class="mt-4">
+                                <a href="/" class="btn btn-primary">Torna alla home</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card shadow border-0">
+                        <div class="card-header text-white text-center py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h3 class="mb-0">✨ Completa la tua registrazione</h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="alert alert-info mb-4">
+                                <i class="bi bi-envelope"></i> <strong>Email:</strong> @emailCliente
+                                <br>
+                                <small class="text-muted">Registrato presso: @puntoVenditaNome</small>
+                            </div>
+
+                            <EditForm Model="@request" OnValidSubmit="@CompletaRegistrazione">
+                                <DataAnnotationsValidator />
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Nome *</label>
+                                        <InputText @bind-Value="request.Nome" 
+                                                   class="form-control" 
+                                                   placeholder="Mario" />
+                                        <ValidationMessage For="@(() => request.Nome)" class="text-danger" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Cognome *</label>
+                                        <InputText @bind-Value="request.Cognome" 
+                                                   class="form-control" 
+                                                   placeholder="Rossi" />
+                                        <ValidationMessage For="@(() => request.Cognome)" class="text-danger" />
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Telefono *</label>
+                                    <InputText @bind-Value="request.Telefono" 
+                                               class="form-control" 
+                                               placeholder="+39 123 456 7890" />
+                                    <ValidationMessage For="@(() => request.Telefono)" class="text-danger" />
+                                </div>
+
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <InputCheckbox @bind-Value="request.PrivacyAccettata" 
+                                                       class="form-check-input" 
+                                                       id="privacy" />
+                                        <label class="form-check-label" for="privacy">
+                                            Accetto i <a href="/privacy" target="_blank">termini e condizioni</a> 
+                                            e l'<a href="/privacy" target="_blank">informativa sulla privacy</a> *
+                                        </label>
+                                        <ValidationMessage For="@(() => request.PrivacyAccettata)" class="text-danger d-block" />
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(messaggioErrore))
+                                {
+                                    <div class="alert alert-danger" role="alert">
+                                        <i class="bi bi-exclamation-triangle"></i> @messaggioErrore
+                                    </div>
+                                }
+
+                                <button type="submit" 
+                                        class="btn btn-lg w-100 text-white" 
+                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                                        disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>Registrazione in corso...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>🎉 Completa Registrazione</span>
+                                    }
+                                </button>
+                            </EditForm>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Token { get; set; }
+
+    private string tokenManuale = "";
+    private CompletaRegistrazioneRequest request = new();
+    private bool isValidating = true;
+    private bool tokenValido = false;
+    private bool isLoading = false;
+    private bool registrazioneCompletata = false;
+    private string messaggioErrore = "";
+    private string emailCliente = "";
+    private string puntoVenditaNome = "";
+    private string codiceFidelity = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Token))
+        {
+            request.Token = Token;
+            await ValidaToken();
+        }
+        else
+        {
+            isValidating = false;
+        }
+    }
+
+    private async Task ValidaToken()
+    {
+        isValidating = true;
+
+        try
+        {
+            var response = await Http.GetAsync($"api/registrazione/valida-token/{Token}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                tokenValido = true;
+                emailCliente = result["email"].ToString();
+                puntoVenditaNome = result.ContainsKey("puntoVenditaNome") 
+                    ? result["puntoVenditaNome"].ToString() 
+                    : "Suns";
+            }
+            else
+            {
+                tokenValido = false;
+            }
+        }
+        catch
+        {
+            tokenValido = false;
+        }
+        finally
+        {
+            isValidating = false;
+        }
+    }
+
+    private async Task CompletaRegistrazione()
+    {
+        isLoading = true;
+        messaggioErrore = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/registrazione/completa", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                var clienteObj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(
+                    result["cliente"].ToString()
+                );
+                
+                codiceFidelity = clienteObj["codiceFidelity"].ToString();
+                registrazioneCompletata = true;
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                messaggioErrore = error?["messaggio"] ?? "Errore durante la registrazione.";
+            }
+        }
+        catch
+        {
+            messaggioErrore = "Errore di connessione. Riprova più tardi.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
