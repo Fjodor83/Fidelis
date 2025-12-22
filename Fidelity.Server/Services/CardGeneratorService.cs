@@ -30,8 +30,8 @@ namespace Fidelity.Server.Services
             // ===== SFONDO GRADIENTE SUNS =====
             using (var brush = new LinearGradientBrush(
                 new Rectangle(0, 0, width, height),
-                Color.FromArgb(102, 126, 234), // #667eea
-                Color.FromArgb(118, 75, 162),  // #764ba2
+                Color.FromArgb(16, 90, 18),    // #105a12ff
+                Color.FromArgb(5, 62, 48),     // #053e30ff
                 LinearGradientMode.Horizontal))
             {
                 graphics.FillRectangle(brush, 0, 0, width, height);
@@ -46,17 +46,33 @@ namespace Fidelity.Server.Services
                 }
             }
 
-            // ===== LOGO/TESTO SUNS =====
-            using (var fontLogo = new Font("Arial", 48, FontStyle.Bold))
-            using (var brushWhite = new SolidBrush(Color.White))
+
+            // ===== LOGO SUNS (IMMAGINE) =====
+            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "images", "SunsLogo.webp");
+            if (File.Exists(logoPath))
             {
-                graphics.DrawString("☀️ SUNS", fontLogo, brushWhite, new PointF(40, 40));
+                using var logoStream = new FileStream(logoPath, FileMode.Open, FileAccess.Read);
+                using var logoImage = Image.FromStream(logoStream);
+                
+                // Disegna il logo con dimensione proporzionata
+                int logoWidth = 120;
+                int logoHeight = 120;
+                graphics.DrawImage(logoImage, new Rectangle(40, 30, logoWidth, logoHeight));
+            }
+            else
+            {
+                // Fallback al testo se l'immagine non esiste
+                using (var fontLogo = new Font("Arial", 48, FontStyle.Bold))
+                using (var brushWhite = new SolidBrush(Color.White))
+                {
+                    graphics.DrawString("☀️ SUNS", fontLogo, brushWhite, new PointF(40, 40));
+                }
             }
 
             using (var fontSubtitle = new Font("Arial", 18, FontStyle.Regular))
             using (var brushWhite = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
             {
-                graphics.DrawString("Zero & Company", fontSubtitle, brushWhite, new PointF(45, 105));
+                graphics.DrawString("Zero & Company", fontSubtitle, brushWhite, new PointF(45, 155));
             }
 
             // ===== NOME CLIENTE =====

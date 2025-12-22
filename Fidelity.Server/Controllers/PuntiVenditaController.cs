@@ -1,0 +1,241 @@
+// Fidelity.Server/Controllers/PuntiVenditaController.cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Fidelity.Server.Data;
+using Fidelity.Shared.DTOs;
+using Fidelity.Shared.Models;
+using System.Security.Claims;
+
+namespace Fidelity.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
+    public class PuntiVenditaController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public PuntiVenditaController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        /// <summary>
+        /// Ottieni tutti i punti vendita con statistiche clienti
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<List<PuntoVenditaResponse>>> GetAll()
+        {
+            try
+            {
+                var puntiVendita = await _context.PuntiVendita
+                    .Select(pv => new PuntoVenditaResponse
+                    {
+                        Id = pv.Id,
+                        Codice = pv.Codice,
+                        Nome = pv.Nome,
+                        Citta = pv.Citta,
+                        Indirizzo = pv.Indirizzo,
+                        Telefono = pv.Telefono,
+                        Attivo = pv.Attivo,
+                        NumeroClienti = pv.ClientiRegistrati.Count(c => c.Attivo),
+                        DataCreazione = pv.DataCreazione
+                    })
+                    .OrderBy(pv => pv.Codice)
+                    .ToListAsync();
+
+                return Ok(puntiVendita);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante il caricamento dei punti vendita.", errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Ottieni dettagli di un punto vendita specifico
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PuntoVenditaResponse>> GetById(int id)
+        {
+            try
+            {
+                var puntoVendita = await _context.PuntiVendita
+                    .Where(pv => pv.Id == id)
+                    .Select(pv => new PuntoVenditaResponse
+                    {
+                        Id = pv.Id,
+                        Codice = pv.Codice,
+                        Nome = pv.Nome,
+                        Citta = pv.Citta,
+                        Indirizzo = pv.Indirizzo,
+                        Telefono = pv.Telefono,
+                        Attivo = pv.Attivo,
+                        NumeroClienti = pv.ClientiRegistrati.Count(c => c.Attivo),
+                        DataCreazione = pv.DataCreazione
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (puntoVendita == null)
+                    return NotFound(new { messaggio = "Punto vendita non trovato." });
+
+                return Ok(puntoVendita);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante il caricamento del punto vendita.", errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Crea un nuovo punto vendita
+        /// </summary>
+        [HttpPost]
+        public async Task<ActionResult<PuntoVenditaResponse>> Create([FromBody] PuntoVenditaRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                // Verifica che il codice non esista già
+                if (await _context.PuntiVendita.AnyAsync(pv => pv.Codice == request.Codice))
+                {
+                    return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
+                }
+
+                var puntoVendita = new PuntoVendita
+                {
+                    Codice = request.Codice,
+                    Nome = request.Nome,
+                    Citta = request.Citta,
+                    Indirizzo = request.Indirizzo,
+                    Telefono = request.Telefono,
+                    Attivo = request.Attivo,
+                    DataCreazione = DateTime.UtcNow
+                };
+
+                _context.PuntiVendita.Add(puntoVendita);
+                await _context.SaveChangesAsync();
+
+                var response = new PuntoVenditaResponse
+                {
+                    Id = puntoVendita.Id,
+                    Codice = puntoVendita.Codice,
+                    Nome = puntoVendita.Nome,
+                    Citta = puntoVendita.Citta,
+                    Indirizzo = puntoVendita.Indirizzo,
+                    Telefono = puntoVendita.Telefono,
+                    Attivo = puntoVendita.Attivo,
+                    NumeroClienti = 0,
+                    DataCreazione = puntoVendita.DataCreazione
+                };
+
+                return CreatedAtAction(nameof(GetById), new { id = puntoVendita.Id }, response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante la creazione del punto vendita.", errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Aggiorna un punto vendita esistente
+        /// </summary>
+        [HttpPut("{id}")]
+        public async Task<ActionResult<PuntoVenditaResponse>> Update(int id, [FromBody] PuntoVenditaRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var puntoVendita = await _context.PuntiVendita.FindAsync(id);
+                if (puntoVendita == null)
+                    return NotFound(new { messaggio = "Punto vendita non trovato." });
+
+                // Verifica che il nuovo codice non esista già (escludendo il punto vendita corrente)
+                if (await _context.PuntiVendita.AnyAsync(pv => pv.Codice == request.Codice && pv.Id != id))
+                {
+                    return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
+                }
+
+                puntoVendita.Codice = request.Codice;
+                puntoVendita.Nome = request.Nome;
+                puntoVendita.Citta = request.Citta;
+                puntoVendita.Indirizzo = request.Indirizzo;
+                puntoVendita.Telefono = request.Telefono;
+                puntoVendita.Attivo = request.Attivo;
+
+                await _context.SaveChangesAsync();
+
+                var numeroClienti = await _context.Clienti.CountAsync(c => c.PuntoVenditaRegistrazioneId == id && c.Attivo);
+
+                var response = new PuntoVenditaResponse
+                {
+                    Id = puntoVendita.Id,
+                    Codice = puntoVendita.Codice,
+                    Nome = puntoVendita.Nome,
+                    Citta = puntoVendita.Citta,
+                    Indirizzo = puntoVendita.Indirizzo,
+                    Telefono = puntoVendita.Telefono,
+                    Attivo = puntoVendita.Attivo,
+                    NumeroClienti = numeroClienti,
+                    DataCreazione = puntoVendita.DataCreazione
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante l'aggiornamento del punto vendita.", errore = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Elimina un punto vendita
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(int id)
+        {
+            try
+            {
+                var puntoVendita = await _context.PuntiVendita
+                    .Include(pv => pv.ClientiRegistrati)
+                    .Include(pv => pv.Responsabili)
+                    .FirstOrDefaultAsync(pv => pv.Id == id);
+
+                if (puntoVendita == null)
+                    return NotFound(new { messaggio = "Punto vendita non trovato." });
+
+                // Verifica se ci sono clienti associati
+                if (puntoVendita.ClientiRegistrati.Any())
+                {
+                    return BadRequest(new { 
+                        messaggio = $"Impossibile eliminare il punto vendita. Ci sono {puntoVendita.ClientiRegistrati.Count} clienti associati.",
+                        numeroClienti = puntoVendita.ClientiRegistrati.Count
+                    });
+                }
+
+                // Verifica se ci sono responsabili associati
+                if (puntoVendita.Responsabili.Any())
+                {
+                    return BadRequest(new { 
+                        messaggio = $"Impossibile eliminare il punto vendita. Ci sono {puntoVendita.Responsabili.Count} responsabili associati.",
+                        numeroResponsabili = puntoVendita.Responsabili.Count
+                    });
+                }
+
+                _context.PuntiVendita.Remove(puntoVendita);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { messaggio = "Punto vendita eliminato con successo." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante l'eliminazione del punto vendita.", errore = ex.Message });
+            }
+        }
+    }
+}

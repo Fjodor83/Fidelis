@@ -1,0 +1,190 @@
+@* Fidelity.Client/Pages/BenvenutoResponsabile.razor *@
+@page "/benvenuto-responsabile"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Registrazione - Suns</PageTitle>
+
+<div class="min-vh-100 d-flex align-items-center welcome-bg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                
+                <!-- Main Registration Card -->
+                <div class="card border-0 shadow-lg welcome-card">
+                    <div class="card-body p-5 text-center">
+                        
+                        <!-- Branding -->
+                        <div class="mb-4 logo-container">
+                            <img src="images/Suns.WEBP" alt="SUNS Logo" class="logo-img-welcome" />
+                            <p class="text-muted mb-0">Zero & Company</p>
+                        </div>
+
+                        <!-- Welcome Message -->
+                        <h3 class="mb-3 fw-bold text-dark">Benvenuto! 👋</h3>
+                        <p class="text-muted mb-4 lh-lg">
+                            Registrati al nostro <strong>programma fedeltà</strong> inserendo la tua email.<br/>
+                            Riceverai un link per completare la registrazione e ottenere la tua Suns Fidelity Card!
+                        </p>
+
+                        <!-- Registration Form -->
+                        <div class="mb-4">
+                            <input @bind="emailRegistrazione" 
+                                   @bind:event="oninput"
+                                   type="email"
+                                   class="form-control form-control-lg text-center" 
+                                   placeholder="La tua email..."
+                                   @onkeypress="@(e => { if (e.Key == "Enter") InviaRegistrazione(); })" />
+                            <small class="text-muted">
+                                Es: tuaemail@example.com
+                            </small>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(messaggioRegistrazione))
+                        {
+                            <div class="alert @(registrazioneSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show">
+                                <i class="bi bi-@(registrazioneSuccess ? "check-circle" : "exclamation-triangle")"></i>
+                                @messaggioRegistrazione
+                                <button type="button" class="btn-close" @onclick="@(() => messaggioRegistrazione = "")"></button>
+                            </div>
+                        }
+
+                        <button class="btn btn-custom-welcome btn-lg w-100 mb-3" @onclick="InviaRegistrazione" disabled="@isInvio">
+                            @if (isInvio)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-envelope me-2"></i>Ricevi Link di Registrazione
+                        </button>
+
+                        <!-- Benefits -->
+                        <div class="benefits-section">
+                            <h5 class="mb-3">✨ Vantaggi della Card</h5>
+                            <div class="row text-start">
+                                <div class="col-6">
+                                    <ul class="list-unstyled small">
+                                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Punti ad ogni acquisto</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Sconti esclusivi</li>
+                                    </ul>
+                                </div>
+                                <div class="col-6">
+                                    <ul class="list-unstyled small">
+                                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Premi fedeltà</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Promozioni speciali</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Store Info Footer -->
+                <div class="text-center mt-4">
+                    <p class="text-white small mb-3">
+                        @if (!string.IsNullOrEmpty(puntoVenditaNome))
+                        {
+                            <span><i class="bi bi-geo-alt-fill me-1"></i>@puntoVenditaNome (@puntoVenditaCodice)</span>
+                        }
+                    </p>
+                    <button class="btn btn-sm btn-outline-light" @onclick="Logout">
+                        <i class="bi bi-box-arrow-right me-1"></i>Esci (Operatore)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string puntoVenditaCodice = "";
+    private string puntoVenditaNome = "";
+    private int puntoVenditaId = 0;
+    private string authToken = "";
+
+    private string emailRegistrazione = "";
+    private bool isInvio = false;
+    private string messaggioRegistrazione = "";
+    private bool registrazioneSuccess = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Recupera dati da localStorage
+        puntoVenditaCodice = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaCodice");
+        puntoVenditaNome = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaNome");
+        authToken = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var ruolo = await JS.InvokeAsync<string>("localStorage.getItem", "ruolo");
+        var pvIdStr = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaId");
+        int.TryParse(pvIdStr, out puntoVenditaId);
+
+        // Redirect se non autenticato
+        if (string.IsNullOrEmpty(authToken))
+        {
+            Navigation.NavigateTo("/login-responsabile");
+            return;
+        }
+
+        // Redirect admin alla dashboard
+        if (ruolo == "Admin")
+        {
+            Navigation.NavigateTo("/dashboard");
+            return;
+        }
+
+        // Configura HttpClient con token
+        Http.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+    }
+
+    private async Task InviaRegistrazione()
+    {
+        if (string.IsNullOrWhiteSpace(emailRegistrazione))
+        {
+            messaggioRegistrazione = "Inserisci un'email valida.";
+            registrazioneSuccess = false;
+            return;
+        }
+
+        isInvio = true;
+        messaggioRegistrazione = "";
+        registrazioneSuccess = false;
+
+        try
+        {
+            var request = new VerificaEmailRequest 
+            { 
+                Email = emailRegistrazione,
+                PuntoVenditaId = puntoVenditaId
+            };
+
+            var response = await Http.PostAsJsonAsync("api/registrazione/verifica-email", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<VerificaEmailResponse>();
+                messaggioRegistrazione = result.Messaggio;
+                registrazioneSuccess = true;
+                emailRegistrazione = "";
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<VerificaEmailResponse>();
+                messaggioRegistrazione = error?.Messaggio ?? "Errore durante la registrazione.";
+            }
+        }
+        catch
+        {
+            messaggioRegistrazione = "Errore di connessione.";
+        }
+        finally
+        {
+            isInvio = false;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.clear");
+        Navigation.NavigateTo("/");
+    }
+}

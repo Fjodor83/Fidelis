@@ -24,6 +24,8 @@ namespace Fidelity.Shared.Models
 
         public bool Attivo { get; set; } = true;
 
+        public DateTime DataCreazione { get; set; } = DateTime.UtcNow;
+
         // Relazioni
         public ICollection<Responsabile> Responsabili { get; set; }
         public ICollection<Cliente> ClientiRegistrati { get; set; }

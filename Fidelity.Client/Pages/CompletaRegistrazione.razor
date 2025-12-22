@@ -6,7 +6,7 @@
 
 <PageTitle>Completa Registrazione - Suns</PageTitle>
 
-<div class="min-vh-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+<div class="min-vh-100 registration-bg">
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -27,7 +27,7 @@
                             </div>
 
                             <button @onclick="@(() => Navigation.NavigateTo("/registrazione/" + tokenManuale))" 
-                                    class="btn btn-primary btn-lg"
+                                    class="btn btn-registration btn-lg"
                                     disabled="@(string.IsNullOrWhiteSpace(tokenManuale) || tokenManuale.Length != 16)">
                                 Continua
                             </button>
@@ -51,7 +51,7 @@
                             <h3 class="mt-3">Token non valido</h3>
                             <p class="text-muted">Il link potrebbe essere scaduto (15 minuti) o già utilizzato.</p>
                             <p>Per ricevere un nuovo link, recati presso il punto vendita.</p>
-                            <a href="/" class="btn btn-primary mt-3">Torna alla home</a>
+                            <a href="/" class="btn btn-registration mt-3">Torna alla home</a>
                         </div>
                     </div>
                 }
@@ -74,7 +74,7 @@
                             </p>
 
                             <div class="mt-4">
-                                <a href="/" class="btn btn-primary">Torna alla home</a>
+                                <a href="/" class="btn btn-registration">Torna alla home</a>
                             </div>
                         </div>
                     </div>
@@ -82,7 +82,7 @@
                 else
                 {
                     <div class="card shadow border-0">
-                        <div class="card-header text-white text-center py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-header text-white text-center py-3 registration-header">
                             <h3 class="mb-0">✨ Completa la tua registrazione</h3>
                         </div>
                         <div class="card-body p-4">
@@ -141,8 +141,7 @@
                                 }
 
                                 <button type="submit" 
-                                        class="btn btn-lg w-100 text-white" 
-                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                                        class="btn btn-registration btn-lg w-100" 
                                         disabled="@isLoading">
                                     @if (isLoading)
                                     {

@@ -36,15 +36,15 @@ namespace Fidelity.Server.Services
                         <style>
                             body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
                             .container {{ max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }}
-                            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; text-align: center; }}
+                            .header {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 40px 20px; text-align: center; }}
                             .header h1 {{ margin: 0; font-size: 28px; }}
                             .content {{ padding: 40px 30px; }}
                             .content h2 {{ color: #333; margin-top: 0; }}
                             .content p {{ color: #666; line-height: 1.6; font-size: 16px; }}
-                            .button {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }}
-                            .info-box {{ background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; }}
+                            .button {{ display: inline-block; background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }}
+                            .info-box {{ background-color: #f8f9fa; border-left: 4px solid #105a12ff; padding: 15px; margin: 20px 0; }}
                             .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 14px; }}
-                            .token {{ font-size: 24px; font-weight: bold; color: #667eea; letter-spacing: 2px; }}
+                            .token {{ font-size: 24px; font-weight: bold; color: #105a12ff; letter-spacing: 2px; }}
                         </style>
                     </head>
                     <body>
@@ -58,14 +58,22 @@ namespace Fidelity.Server.Services
                                 <p>Sei stato registrato presso il nostro punto vendita <strong>{nomePuntoVendita}</strong>.</p>
                                 <p>Per completare la tua registrazione e ricevere la tua Suns Fidelity Card digitale, clicca sul pulsante qui sotto:</p>
                                 
-                                <div style='text-align: center;'>
-                                    <a href='{linkRegistrazione}' class='button'>COMPLETA REGISTRAZIONE</a>
+                                <div style='text-align: center; margin: 20px 0;'>
+                                    <table border='0' cellpadding='0' cellspacing='0' style='margin: 0 auto;'>
+                                        <tr>
+                                            <td align='center' bgcolor='#105a12' style='background-color: #105a12; background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border-radius: 5px; padding: 15px 40px;'>
+                                                <a href='{linkRegistrazione}' style='color: #ffffff; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-decoration: none; display: inline-block;'>
+                                                    <span style='color: #ffffff; text-decoration: none;'>COMPLETA REGISTRAZIONE</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
 
                                 <div class='info-box'>
                                     <p style='margin: 0;'><strong>⏰ Attenzione:</strong> Questo link è valido per <strong>15 minuti</strong>.</p>
                                     <p style='margin: 10px 0 0 0;'>Se non riesci a cliccare il pulsante, copia questo link nel tuo browser:</p>
-                                    <p style='word-break: break-all; color: #667eea; margin: 10px 0 0 0;'>{linkRegistrazione}</p>
+                                    <p style='word-break: break-all; color: #105a12ff; margin: 10px 0 0 0;'>{linkRegistrazione}</p>
                                 </div>
 
                                 <div class='info-box'>
@@ -133,12 +141,12 @@ namespace Fidelity.Server.Services
                         <style>
                             body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
                             .container {{ max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }}
-                            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; text-align: center; }}
+                            .header {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 40px 20px; text-align: center; }}
                             .header h1 {{ margin: 0; font-size: 28px; }}
                             .content {{ padding: 40px 30px; }}
                             .content h2 {{ color: #333; margin-top: 0; }}
                             .content p {{ color: #666; line-height: 1.6; font-size: 16px; }}
-                            .code-box {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px; margin: 30px 0; }}
+                            .code-box {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 30px; text-align: center; border-radius: 10px; margin: 30px 0; }}
                             .code-box h2 {{ margin: 0 0 10px 0; font-size: 18px; }}
                             .code {{ font-size: 36px; font-weight: bold; letter-spacing: 3px; }}
                             .benefits {{ background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; }}

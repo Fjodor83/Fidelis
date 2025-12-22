@@ -6,7 +6,7 @@
 
 <PageTitle>Login Responsabile - Suns</PageTitle>
 
-<div class="min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+<div class="min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-5">
@@ -23,7 +23,7 @@
                                 <label class="form-label fw-bold">Username / Codice Punto Vendita</label>
                                 <InputText @bind-Value="loginRequest.Username" 
                                            class="form-control form-control-lg" 
-                                           placeholder="NE01" />
+                                           placeholder="RE01" />
                                 <ValidationMessage For="@(() => loginRequest.Username)" class="text-danger" />
                             </div>
 
@@ -97,15 +97,23 @@
                 await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", result.NomeCompleto);
                 await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaId", result.PuntoVenditaId?.ToString() ?? "");
                 await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaCodice", result.PuntoVenditaCodice ?? "");
+                await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaNome", result.PuntoVenditaNome ?? "");
+                await JS.InvokeVoidAsync("localStorage.setItem", "richiestaResetPassword", result.RichiestaResetPassword.ToString().ToLower());
                 
-                // Redirect
+                // Redirect basato su ruolo e stato
                 if (result.RichiestaResetPassword)
                 {
                     Navigation.NavigateTo("/cambia-password");
                 }
+                else if (result.Ruolo == "Admin")
+                {
+                    // Admin va alla dashboard con statistiche di tutti i negozi
+                    Navigation.NavigateTo("/dashboard");
+                }
                 else
                 {
-                    Navigation.NavigateTo("/dashboard");
+                    // Responsabile va alla pagina di benvenuto per registrare clienti
+                    Navigation.NavigateTo("/benvenuto-responsabile");
                 }
             }
             else
