@@ -1,34 +1,160 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// Fidelity.Server/Controllers/RegistrazioneController.cs
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Fidelity.Server.Data;
 using Fidelity.Server.Services;
+using Fidelity.Shared.DTOs;
 using Fidelity.Shared.Models;
-using Fidelity.Shared.DTOs; // Assuming DTOs namespace
-using Microsoft.AspNetCore.Authorization;
 
 namespace Fidelity.Server.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class RegistrazioneController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly ICardGeneratorService _cardGenerator;
+        private readonly IConfiguration _configuration;
 
         public RegistrazioneController(
             ApplicationDbContext context,
             IEmailService emailService,
-            ICardGeneratorService cardGenerator)
+            ICardGeneratorService cardGenerator,
+            IConfiguration configuration)
         {
             _context = context;
             _emailService = emailService;
             _cardGenerator = cardGenerator;
+            _configuration = configuration;
         }
 
-        [HttpGet("verifica/{token}")]
+        /// <summary>
+        /// Verifica disponibilità email e genera token di registrazione
+        /// SOLO accessibile da responsabile autenticato
+        /// </summary>
+        [HttpPost("verifica-email")]
+        [Authorize(Roles = "Responsabile,Admin")]
+        public async Task<ActionResult<VerificaEmailResponse>> VerificaEmail([FromBody] VerificaEmailRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var responsabileId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var puntoVenditaId = int.Parse(User.FindFirst("PuntoVenditaId")?.Value ?? "0");
+
+                // Verifica che il punto vendita nel request corrisponda a quello del responsabile
+                if (request.PuntoVenditaId != puntoVenditaId && User.FindFirst(ClaimTypes.Role)?.Value != "Admin")
+                {
+                    return Unauthorized(new VerificaEmailResponse
+                    {
+                        Valida = false,
+                        Messaggio = "Non puoi registrare clienti per altri punti vendita."
+                    });
+                }
+
+                // Verifica se email già registrata
+                var emailEsistente = await _context.Clienti
+                    .AnyAsync(c => c.Email == request.Email);
+
+                if (emailEsistente)
+                {
+                    return BadRequest(new VerificaEmailResponse
+                    {
+                        Valida = false,
+                        Messaggio = "Questa email è già registrata nel sistema."
+                    });
+                }
+
+                // Verifica token esistente non scaduto per questa email
+                var tokenEsistente = await _context.TokenRegistrazione
+                    .Where(t => t.Email == request.Email
+                        && !t.Utilizzato
+                        && t.DataScadenza > DateTime.UtcNow)
+                    .FirstOrDefaultAsync();
+
+                if (tokenEsistente != null)
+                {
+                    var linkEsistente = $"{_configuration["AppUrl"]}/registrazione/{tokenEsistente.Token}";
+                    return Ok(new VerificaEmailResponse
+                    {
+                        Valida = true,
+                        Token = tokenEsistente.Token,
+                        LinkRegistrazione = linkEsistente,
+                        Messaggio = "Un link di registrazione è già stato inviato a questa email.",
+                        EmailInviata = false
+                    });
+                }
+
+                // Genera nuovo token 16 cifre
+                var token = GeneraToken16Cifre();
+
+                // Crea record token
+                var nuovoToken = new TokenRegistrazione
+                {
+                    Email = request.Email,
+                    Token = token,
+                    PuntoVenditaId = request.PuntoVenditaId,
+                    ResponsabileId = responsabileId,
+                    DataCreazione = DateTime.UtcNow,
+                    DataScadenza = DateTime.UtcNow.AddMinutes(15)
+                };
+
+                _context.TokenRegistrazione.Add(nuovoToken);
+                await _context.SaveChangesAsync();
+
+                // Genera link registrazione
+                var linkRegistrazione = $"{_configuration["AppUrl"]}/registrazione/{token}";
+
+                // Ottieni info punto vendita per email
+                var puntoVendita = await _context.PuntiVendita
+                    .FirstOrDefaultAsync(p => p.Id == request.PuntoVenditaId);
+
+                // Invia email
+                var emailInviata = await _emailService.InviaEmailVerificaAsync(
+                    request.Email,
+                    "Cliente", // Nome generico, sarà inserito dopo
+                    token,
+                    linkRegistrazione,
+                    puntoVendita?.Nome ?? "Suns"
+                );
+
+                return Ok(new VerificaEmailResponse
+                {
+                    Valida = true,
+                    Token = token,
+                    LinkRegistrazione = linkRegistrazione,
+                    Messaggio = emailInviata
+                        ? "Email di verifica inviata con successo."
+                        : "Token generato ma errore nell'invio email.",
+                    EmailInviata = emailInviata
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new VerificaEmailResponse
+                {
+                    Valida = false,
+                    Messaggio = "Errore durante la verifica email.",
+                    EmailInviata = false
+                });
+            }
+        }
+
+        /// <summary>
+        /// Valida il token di registrazione (chiamato quando il cliente clicca il link)
+        /// Endpoint PUBBLICO
+        /// </summary>
+        [HttpGet("valida-token/{token}")]
         [AllowAnonymous]
-        public async Task<IActionResult> VerificaToken(string token)
+        public async Task<IActionResult> ValidaToken(string token)
         {
             try
             {
@@ -55,7 +181,7 @@ namespace Fidelity.Server.Controllers
                     messaggio = "Token valido. Procedi con la registrazione."
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { valido = false, messaggio = "Errore durante la validazione token." });
             }
@@ -148,7 +274,7 @@ namespace Fidelity.Server.Controllers
                     }
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { success = false, messaggio = "Errore durante la registrazione." });
             }

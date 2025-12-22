@@ -14,13 +14,13 @@ namespace Fidelity.Shared.Models
         public string Nome { get; set; }
 
         [StringLength(500)]
-        public string Indirizzo { get; set; }
+        public string? Indirizzo { get; set; }  // ← OPZIONALE
 
         [StringLength(50)]
-        public string Citta { get; set; }
+        public string? Citta { get; set; }  // ← OPZIONALE
 
         [Phone]
-        public string Telefono { get; set; }
+        public string? Telefono { get; set; }  // ← OPZIONALE (aggiunto ?)
 
         public bool Attivo { get; set; } = true;
 
