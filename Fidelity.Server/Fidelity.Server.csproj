@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>a2ac9e3e-498c-4c82-a7fd-314a4aec80f5</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fidelity.Shared\Fidelity.Shared.csproj" />
+    <ProjectReference Include="..\Fidelity.Client\Fidelity.Client.csproj" />
   </ItemGroup>
 
 </Project>

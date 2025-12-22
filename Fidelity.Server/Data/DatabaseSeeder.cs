@@ -25,7 +25,7 @@ namespace Fidelity.Server.Data
             {
                 new PuntoVendita
                 {
-                    Codice = "SU01",
+                    Codice = "NE01",
                     Nome = "Suns Centro",
                     Citta = "Roma",
                     Indirizzo = "Via del Corso 1",
@@ -34,7 +34,7 @@ namespace Fidelity.Server.Data
                 },
                 new PuntoVendita
                 {
-                    Codice = "SU02",
+                    Codice = "NE02",
                     Nome = "Suns Nord",
                     Citta = "Milano",
                     Indirizzo = "Corso Vittorio Emanuele II 1",
@@ -55,7 +55,7 @@ namespace Fidelity.Server.Data
             {
                 new Responsabile
                 {
-                    Username = "SU01",
+                    Username = "NE01",
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Mario Rossi",
                     Email = "mario.rossi@sunscompany.com",
@@ -66,7 +66,7 @@ namespace Fidelity.Server.Data
                 },
                 new Responsabile
                 {
-                    Username = "SU02",
+                    Username = "NE02",
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Laura Bianchi",
                     Email = "laura.bianchi@sunscompany.com",

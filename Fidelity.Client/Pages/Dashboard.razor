@@ -193,7 +193,7 @@
     {
         try
         {
-            var clienti = await Http.GetFromJsonAsync<List<ClienteResponse>>("api/clienti/mio-punto-vendita");
+            var clienti = await Http.GetFromJsonAsync<List<ClienteResponse>>("api/Clienti/mio-punto-vendita");
             totaleClienti = clienti?.Count ?? 0;
         }
         catch { }
@@ -249,7 +249,7 @@
 
         try
         {
-            clienteTrovato = await Http.GetFromJsonAsync<ClienteResponse>($"api/clienti/cerca?query={ricercaCliente}");
+            clienteTrovato = await Http.GetFromJsonAsync<ClienteResponse>($"api/Clienti/cerca?query={ricercaCliente}");
         }
         catch
         {
