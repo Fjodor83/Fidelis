@@ -17,8 +17,8 @@ namespace Fidelity.Server.Data
                 return; // Database già popolato
             }
 
-            // Hash statico per password "Suns2024!"
-            const string hashedPassword = "$2a$11$X9mXQZqXKJ8xQqXZQJ3kqZ7VHJqK.YQF7YvV7zTJqXKJ8xQqXZQJ3";
+            // Hash BCrypt per password "Suns2024!"
+            const string hashedPassword = "$2a$11$ZL/PCQPBe9NKMOgFHY0EheXQ8IXFCX4X7awlP2uAYdLwZA1hYGyJa";
 
             // Seed Punti Vendita
             var puntiVendita = new[]
@@ -47,15 +47,15 @@ namespace Fidelity.Server.Data
             await context.SaveChangesAsync();
 
             // Recupera i PuntiVendita appena creati per avere gli ID
-            var puntoVendita1 = await context.PuntiVendita.FirstAsync(p => p.Codice == "SU01");
-            var puntoVendita2 = await context.PuntiVendita.FirstAsync(p => p.Codice == "SU02");
+            var puntoVendita1 = await context.PuntiVendita.FirstAsync(p => p.Codice == "NE01");
+            var puntoVendita2 = await context.PuntiVendita.FirstAsync(p => p.Codice == "NE02");
 
             // Seed Responsabili
             var responsabili = new[]
             {
                 new Responsabile
                 {
-                    Username = "NE01",
+                    Username = "RE01",
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Mario Rossi",
                     Email = "mario.rossi@sunscompany.com",
@@ -66,7 +66,7 @@ namespace Fidelity.Server.Data
                 },
                 new Responsabile
                 {
-                    Username = "NE02",
+                    Username = "RE02",
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Laura Bianchi",
                     Email = "laura.bianchi@sunscompany.com",
