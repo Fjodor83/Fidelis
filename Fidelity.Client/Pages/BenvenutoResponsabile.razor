@@ -35,7 +35,7 @@
                                    type="email"
                                    class="form-control form-control-lg text-center" 
                                    placeholder="La tua email..."
-                                   @onkeypress="@(e => { if (e.Key == "Enter") InviaRegistrazione(); })" />
+                                   @onkeypress="@(async e => { if (e.Key == "Enter") await InviaRegistrazione(); })" />
                             <small class="text-muted">
                                 Es: tuaemail@example.com
                             </small>

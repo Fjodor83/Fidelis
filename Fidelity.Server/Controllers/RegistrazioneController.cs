@@ -118,7 +118,7 @@ namespace Fidelity.Server.Controllers
                     .FirstOrDefaultAsync(p => p.Id == request.PuntoVenditaId);
 
                 // Invia email
-                var emailInviata = await _emailService.InviaEmailVerificaAsync(
+                var (emailInviata, queryError) = await _emailService.InviaEmailVerificaAsync(
                     request.Email,
                     "Cliente", // Nome generico, sarà inserito dopo
                     token,
@@ -133,7 +133,7 @@ namespace Fidelity.Server.Controllers
                     LinkRegistrazione = linkRegistrazione,
                     Messaggio = emailInviata
                         ? "Email di verifica inviata con successo."
-                        : "Token generato ma errore nell'invio email.",
+                        : $"Token generato ma errore email: {queryError}",
                     EmailInviata = emailInviata
                 });
             }

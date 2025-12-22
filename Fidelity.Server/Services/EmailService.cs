@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using MailKit;
 using MimeKit;
 
 namespace Fidelity.Server.Services
@@ -18,7 +19,7 @@ namespace Fidelity.Server.Services
             _configuration = configuration;
         }
 
-        public async Task<bool> InviaEmailVerificaAsync(string email, string nomeCliente, string token, string linkRegistrazione, string nomePuntoVendita)
+        public async Task<(bool Success, string ErrorMessage)> InviaEmailVerificaAsync(string email, string nomeCliente, string token, string linkRegistrazione, string nomePuntoVendita)
         {
             try
             {
@@ -99,7 +100,9 @@ namespace Fidelity.Server.Services
 
                 message.Body = bodyBuilder.ToMessageBody();
 
-                using var client = new SmtpClient();
+                // Use ProtocolLogger to log SMTP communication to Console
+                using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
+                
                 await client.ConnectAsync(
                     _configuration["Email:SmtpServer"],
                     int.Parse(_configuration["Email:SmtpPort"]),
@@ -112,18 +115,19 @@ namespace Fidelity.Server.Services
                 );
 
                 await client.SendAsync(message);
+                Console.WriteLine($"[EmailService] Email sent successfully to {email}");
                 await client.DisconnectAsync(true);
 
-                return true;
+                return (true, string.Empty);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore invio email: {ex.Message}");
-                return false;
+                return (false, ex.Message);
             }
         }
 
-        public async Task<bool> InviaEmailBenvenutoAsync(string email, string nome, string codiceFidelity, byte[] cardDigitale)
+        public async Task<(bool Success, string ErrorMessage)> InviaEmailBenvenutoAsync(string email, string nome, string codiceFidelity, byte[] cardDigitale)
         {
             try
             {
@@ -202,7 +206,9 @@ namespace Fidelity.Server.Services
 
                 message.Body = bodyBuilder.ToMessageBody();
 
-                using var client = new SmtpClient();
+                // Use ProtocolLogger to log SMTP communication to Console
+                using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
+                
                 await client.ConnectAsync(
                     _configuration["Email:SmtpServer"],
                     int.Parse(_configuration["Email:SmtpPort"]),
@@ -215,14 +221,15 @@ namespace Fidelity.Server.Services
                 );
 
                 await client.SendAsync(message);
+                Console.WriteLine($"[EmailService] Welcome email sent successfully to {email}");
                 await client.DisconnectAsync(true);
 
-                return true;
+                return (true, string.Empty);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore invio email benvenuto: {ex.Message}");
-                return false;
+                return (false, ex.Message);
             }
         }
     }
