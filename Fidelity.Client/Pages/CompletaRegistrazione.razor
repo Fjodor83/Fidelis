@@ -26,7 +26,7 @@
                                        style="letter-spacing: 3px;" />
                             </div>
 
-                            <button @onclick="() => Navigation.NavigateTo($'/registrazione/{tokenManuale}')" 
+                            <button @onclick="@(() => Navigation.NavigateTo("/registrazione/" + tokenManuale))" 
                                     class="btn btn-primary btn-lg"
                                     disabled="@(string.IsNullOrWhiteSpace(tokenManuale) || tokenManuale.Length != 16)">
                                 Continua
@@ -92,7 +92,7 @@
                                 <small class="text-muted">Registrato presso: @puntoVenditaNome</small>
                             </div>
 
-                            <EditForm Model="@request" OnValidSubmit="@CompletaRegistrazione">
+                            <EditForm Model="@request" OnValidSubmit="@CompletaRegistrazioneAsync">
                                 <DataAnnotationsValidator />
 
                                 <div class="row">
@@ -223,7 +223,7 @@
         }
     }
 
-    private async Task CompletaRegistrazione()
+    private async Task CompletaRegistrazioneAsync()
     {
         isLoading = true;
         messaggioErrore = "";

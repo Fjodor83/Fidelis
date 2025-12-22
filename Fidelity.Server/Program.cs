@@ -21,6 +21,23 @@ builder.Services.AddRazorPages();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ICardGeneratorService, CardGeneratorService>();
 
+// CORS Configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorClient", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:5184",  // Client dev server
+            "https://localhost:7184", // Client dev server HTTPS
+            "http://localhost:5085",  // Server itself
+            "https://localhost:7085"  // Server HTTPS
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
+
 // Authentication Configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -37,9 +54,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// OpenAPI/Swagger
+// Swagger/OpenAPI Configuration
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -70,7 +87,12 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Suns Fidelity API V1");
+        c.RoutePrefix = "swagger";
+    });
 }
 else
 {
@@ -79,6 +101,9 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// CORS deve essere prima di Authorization
+app.UseCors("AllowBlazorClient");
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
