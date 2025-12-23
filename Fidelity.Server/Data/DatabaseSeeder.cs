@@ -59,7 +59,6 @@ namespace Fidelity.Server.Data
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Mario Rossi",
                     Email = "mario.rossi@sunscompany.com",
-                    PuntoVenditaId = puntoVendita1.Id,
                     Ruolo = "Responsabile",
                     Attivo = true,
                     RichiestaResetPassword = false
@@ -70,7 +69,6 @@ namespace Fidelity.Server.Data
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Laura Bianchi",
                     Email = "laura.bianchi@sunscompany.com",
-                    PuntoVenditaId = puntoVendita2.Id,
                     Ruolo = "Responsabile",
                     Attivo = true,
                     RichiestaResetPassword = false
@@ -81,7 +79,6 @@ namespace Fidelity.Server.Data
                     PasswordHash = hashedPassword,
                     NomeCompleto = "Amministratore Suns",
                     Email = "admin@sunscompany.com",
-                    PuntoVenditaId = null,
                     Ruolo = "Admin",
                     Attivo = true,
                     RichiestaResetPassword = false
@@ -89,6 +86,26 @@ namespace Fidelity.Server.Data
             };
 
             await context.Responsabili.AddRangeAsync(responsabili);
+            await context.SaveChangesAsync();
+
+            var responsabile1 = await context.Responsabili.FirstAsync(r => r.Username == "RE01");
+            var responsabile2 = await context.Responsabili.FirstAsync(r => r.Username == "RE02");
+
+            var responsabiliPuntiVendita = new[]
+            {
+                new ResponsabilePuntoVendita
+                {
+                    ResponsabileId = responsabile1.Id,
+                    PuntoVenditaId = puntoVendita1.Id
+                },
+                new ResponsabilePuntoVendita
+                {
+                    ResponsabileId = responsabile2.Id,
+                    PuntoVenditaId = puntoVendita2.Id
+                }
+            };
+
+            await context.ResponsabilePuntiVendita.AddRangeAsync(responsabiliPuntiVendita);
             await context.SaveChangesAsync();
 
             Console.WriteLine("✓ Database seeded successfully!");

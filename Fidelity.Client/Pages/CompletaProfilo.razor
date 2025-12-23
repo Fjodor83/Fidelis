@@ -1,0 +1,150 @@
+@* Fidelity.Client/Pages/CompletaProfilo.razor *@
+@page "/completa-profilo"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Completa Profilo - Suns</PageTitle>
+
+<div class="min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+                        <h3 class="mb-0">👤 Completa il tuo Profilo</h3>
+                        <p class="mb-0 small">Suns - Zero & Company</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Benvenuto!</strong> Per completare la registrazione, inserisci il tuo nome e cognome reali.
+                        </div>
+
+                        <EditForm Model="@request" OnValidSubmit="@CompletaProfiloAsync">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nome</label>
+                                <input @bind="request.Nome" 
+                                       type="text"
+                                       class="form-control" 
+                                       placeholder="Es: Mario" />
+                                <ValidationMessage For="@(() => request.Nome)" class="text-danger" />
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Cognome</label>
+                                <input @bind="request.Cognome" 
+                                       type="text"
+                                       class="form-control" 
+                                       placeholder="Es: Rossi" />
+                                <ValidationMessage For="@(() => request.Cognome)" class="text-danger" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(messaggioErrore))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle"></i> @messaggioErrore
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(messaggioSuccesso))
+                            {
+                                <div class="alert alert-success" role="alert">
+                                    <i class="bi bi-check-circle"></i> @messaggioSuccesso
+                                </div>
+                            }
+
+                            <div class="d-grid">
+                                <button type="submit" 
+                                        class="btn btn-success btn-lg" 
+                                        style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;"
+                                        disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>Salvataggio...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Completa Profilo</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+
+                        <div class="mt-4 text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check"></i> 
+                                I tuoi dati sono protetti e visibili solo all'amministratore
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CompletaProfiloRequest request = new();
+    private bool isLoading = false;
+    private string messaggioErrore = "";
+    private string messaggioSuccesso = "";
+    private string authToken = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        authToken = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+        if (string.IsNullOrEmpty(authToken))
+        {
+            Navigation.NavigateTo("/login-responsabile");
+            return;
+        }
+
+        // Configura HttpClient con token
+        Http.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+    }
+
+    private async Task CompletaProfiloAsync()
+    {
+        isLoading = true;
+        messaggioErrore = "";
+        messaggioSuccesso = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/completa-profilo", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                messaggioSuccesso = result["messaggio"].ToString();
+
+                // Aggiorna flag in localStorage
+                await JS.InvokeVoidAsync("localStorage.setItem", "profiloIncompleto", "false");
+                await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", result["nomeCompleto"].ToString());
+
+                // Redirect dopo 2 secondi
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                messaggioErrore = error?["messaggio"] ?? "Errore durante il completamento del profilo.";
+            }
+        }
+        catch
+        {
+            messaggioErrore = "Errore di connessione. Riprova.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

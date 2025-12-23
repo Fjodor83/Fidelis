@@ -20,11 +20,10 @@ namespace Fidelity.Shared.Models
         [EmailAddress]
         public string Email { get; set; }
 
-        public int? PuntoVenditaId { get; set; }
-        public PuntoVendita PuntoVendita { get; set; }
+        public ICollection<ResponsabilePuntoVendita> ResponsabilePuntiVendita { get; set; } = new List<ResponsabilePuntoVendita>();
 
         [Required, StringLength(20)]
-        public string Ruolo { get; set; } // "Admin" o "Responsabile"
+        public string Ruolo { get; set; }
 
         public bool Attivo { get; set; } = true;
 

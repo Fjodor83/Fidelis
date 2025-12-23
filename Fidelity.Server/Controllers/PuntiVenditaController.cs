@@ -6,6 +6,7 @@ using Fidelity.Server.Data;
 using Fidelity.Shared.DTOs;
 using Fidelity.Shared.Models;
 using System.Security.Claims;
+using BCrypt.Net;
 
 namespace Fidelity.Server.Controllers
 {
@@ -105,6 +106,15 @@ namespace Fidelity.Server.Controllers
                     return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
                 }
 
+                // Genera username per il responsabile (es: NE03 -> RE03)
+                var responsabileUsername = "RE" + request.Codice.Substring(2);
+
+                // Verifica che il responsabile con questo username non esista già
+                if (await _context.Responsabili.AnyAsync(r => r.Username == responsabileUsername))
+                {
+                    return BadRequest(new { messaggio = $"Esiste già un responsabile con username '{responsabileUsername}'. Impossibile creare il punto vendita." });
+                }
+
                 var puntoVendita = new PuntoVendita
                 {
                     Codice = request.Codice,
@@ -118,6 +128,55 @@ namespace Fidelity.Server.Controllers
 
                 _context.PuntiVendita.Add(puntoVendita);
                 await _context.SaveChangesAsync();
+
+                // Crea automaticamente il responsabile associato
+                try
+                {
+                    var responsabile = new Responsabile
+                    {
+                        Username = responsabileUsername,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Suns2024!"),
+                        NomeCompleto = "", // Empty string instead of null (will be filled during profile completion)
+                        Email = $"responsabile.{responsabileUsername.ToLower()}@sunscompany.com",
+                        Ruolo = "Responsabile",
+                        Attivo = true,
+                        RichiestaResetPassword = true // Forza cambio password al primo accesso
+                    };
+
+                    Console.WriteLine($"[DEBUG] Creating responsabile: {responsabile.Username}, Email: {responsabile.Email}");
+                    
+                    _context.Responsabili.Add(responsabile);
+                    await _context.SaveChangesAsync();
+
+                    Console.WriteLine($"[DEBUG] Responsabile created with ID: {responsabile.Id}");
+
+                    // Crea l'associazione nella junction table
+                    var link = new ResponsabilePuntoVendita
+                    {
+                        ResponsabileId = responsabile.Id,
+                        PuntoVenditaId = puntoVendita.Id
+                    };
+
+                    _context.ResponsabilePuntiVendita.Add(link);
+                    await _context.SaveChangesAsync();
+
+                    Console.WriteLine($"[PuntiVenditaController] Punto vendita '{puntoVendita.Codice}' creato con responsabile '{responsabile.Username}'");
+                }
+                catch (Exception exResp)
+                {
+                    Console.WriteLine($"[ERROR] Failed to create responsabile: {exResp.Message}");
+                    Console.WriteLine($"[ERROR] Stack trace: {exResp.StackTrace}");
+                    if (exResp.InnerException != null)
+                    {
+                        Console.WriteLine($"[ERROR] Inner exception: {exResp.InnerException.Message}");
+                    }
+                    
+                    // Rollback - remove punto vendita
+                    _context.PuntiVendita.Remove(puntoVendita);
+                    await _context.SaveChangesAsync();
+                    
+                    return StatusCode(500, new { messaggio = "Errore durante la creazione del responsabile.", errore = exResp.Message });
+                }
 
                 var response = new PuntoVenditaResponse
                 {
@@ -203,7 +262,6 @@ namespace Fidelity.Server.Controllers
             {
                 var puntoVendita = await _context.PuntiVendita
                     .Include(pv => pv.ClientiRegistrati)
-                    .Include(pv => pv.Responsabili)
                     .FirstOrDefaultAsync(pv => pv.Id == id);
 
                 if (puntoVendita == null)
@@ -218,12 +276,15 @@ namespace Fidelity.Server.Controllers
                     });
                 }
 
-                // Verifica se ci sono responsabili associati
-                if (puntoVendita.Responsabili.Any())
+                // Verifica se ci sono responsabili associati tramite junction table
+                var numeroResponsabili = await _context.ResponsabilePuntiVendita
+                    .CountAsync(rp => rp.PuntoVenditaId == id);
+
+                if (numeroResponsabili > 0)
                 {
                     return BadRequest(new { 
-                        messaggio = $"Impossibile eliminare il punto vendita. Ci sono {puntoVendita.Responsabili.Count} responsabili associati.",
-                        numeroResponsabili = puntoVendita.Responsabili.Count
+                        messaggio = $"Impossibile eliminare il punto vendita. Ci sono {numeroResponsabili} responsabili associati.",
+                        numeroResponsabili = numeroResponsabili
                     });
                 }
 

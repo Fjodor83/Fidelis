@@ -41,7 +41,8 @@ namespace Fidelity.Server.Controllers
             try
             {
                 var responsabile = await _context.Responsabili
-                    .Include(r => r.PuntoVendita)
+                    .Include(r => r.ResponsabilePuntiVendita)
+                        .ThenInclude(rp => rp.PuntoVendita)
                     .FirstOrDefaultAsync(r => r.Username == request.Username && r.Attivo);
 
                 if (responsabile == null)
@@ -67,8 +68,11 @@ namespace Fidelity.Server.Controllers
                 responsabile.UltimoAccesso = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
+                // Ottieni il primo punto vendita associato (se esiste)
+                var primoPuntoVendita = responsabile.ResponsabilePuntiVendita?.FirstOrDefault()?.PuntoVendita;
+
                 // Genera JWT Token
-                var token = GeneraJwtToken(responsabile);
+                var token = GeneraJwtToken(responsabile, primoPuntoVendita?.Id);
 
                 return Ok(new LoginResponse
                 {
@@ -78,10 +82,11 @@ namespace Fidelity.Server.Controllers
                     Username = responsabile.Username,
                     NomeCompleto = responsabile.NomeCompleto,
                     Ruolo = responsabile.Ruolo,
-                    PuntoVenditaId = responsabile.PuntoVenditaId,
-                    PuntoVenditaCodice = responsabile.PuntoVendita?.Codice,
-                    PuntoVenditaNome = responsabile.PuntoVendita?.Nome,
+                    PuntoVenditaId = primoPuntoVendita?.Id,
+                    PuntoVenditaCodice = primoPuntoVendita?.Codice,
+                    PuntoVenditaNome = primoPuntoVendita?.Nome,
                     RichiestaResetPassword = responsabile.RichiestaResetPassword,
+                    ProfiloIncompleto = string.IsNullOrWhiteSpace(responsabile.NomeCompleto),
                     Messaggio = "Login effettuato con successo."
                 });
             }
@@ -133,7 +138,41 @@ namespace Fidelity.Server.Controllers
             }
         }
 
-        private string GeneraJwtToken(Responsabile responsabile)
+        /// <summary>
+        /// Completa profilo responsabile con nome e cognome reali
+        /// </summary>
+        [HttpPost("completa-profilo")]
+        [Authorize]
+        public async Task<IActionResult> CompletaProfilo([FromBody] CompletaProfiloRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var responsabileId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var responsabile = await _context.Responsabili.FindAsync(responsabileId);
+
+                if (responsabile == null)
+                    return NotFound(new { success = false, messaggio = "Responsabile non trovato." });
+
+                // Valida che il profilo sia incompleto (NomeCompleto vuoto)
+                if (!string.IsNullOrWhiteSpace(responsabile.NomeCompleto))
+                    return BadRequest(new { success = false, messaggio = "Profilo già completato." });
+
+                // Aggiorna con nome reale
+                responsabile.NomeCompleto = $"{request.Nome} {request.Cognome}";
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, messaggio = "Profilo completato con successo.", nomeCompleto = responsabile.NomeCompleto });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, messaggio = "Errore durante il completamento del profilo." });
+            }
+        }
+
+        private string GeneraJwtToken(Responsabile responsabile, int? puntoVenditaId)
         {
             var securityKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
@@ -144,7 +183,7 @@ namespace Fidelity.Server.Controllers
                 new Claim(ClaimTypes.NameIdentifier, responsabile.Id.ToString()),
                 new Claim(ClaimTypes.Name, responsabile.Username),
                 new Claim(ClaimTypes.Role, responsabile.Ruolo),
-                new Claim("PuntoVenditaId", responsabile.PuntoVenditaId?.ToString() ?? "0"),
+                new Claim("PuntoVenditaId", puntoVenditaId?.ToString() ?? "0"),
                 new Claim("NomeCompleto", responsabile.NomeCompleto ?? "")
             };
 

@@ -13,6 +13,7 @@ namespace Fidelity.Shared.DTOs
         public string PuntoVenditaCodice { get; set; }
         public string PuntoVenditaNome { get; set; }
         public bool RichiestaResetPassword { get; set; }
+        public bool ProfiloIncompleto { get; set; }
         public string Messaggio { get; set; }
     }
 }

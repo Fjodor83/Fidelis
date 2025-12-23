@@ -26,8 +26,7 @@ namespace Fidelity.Shared.Models
 
         public DateTime DataCreazione { get; set; } = DateTime.UtcNow;
 
-        // Relazioni
-        public ICollection<Responsabile> Responsabili { get; set; }
+        public ICollection<ResponsabilePuntoVendita> ResponsabilePuntiVendita { get; set; } = new List<ResponsabilePuntoVendita>();
         public ICollection<Cliente> ClientiRegistrati { get; set; }
         public ICollection<Transazione> Transazioni { get; set; }
     }

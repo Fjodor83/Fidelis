@@ -172,12 +172,98 @@
                                                 }
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm">
+                                                <div class="btn-group" role="group">
                                                     <button class="btn btn-outline-primary" @onclick="() => ApriModaleModifica(negozio)">
-                                                        <i class="bi bi-pencil"></i>
+                                                        <i class="bi bi-pencil"></i> Modifica
                                                     </button>
                                                     <button class="btn btn-outline-danger" @onclick="() => ApriModaleEliminazione(negozio)">
-                                                        <i class="bi bi-trash"></i>
+                                                        <i class="bi bi-trash"></i> Elimina
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Managers Management Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-people"></i> Gestione Responsabili</h5>
+                            <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;" @onclick="ApriModaleCrezioneResponsabile">
+                                <i class="bi bi-plus-circle"></i> Nuovo Responsabile
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Nome Completo</th>
+                                        <th>Email</th>
+                                        <th>Punti Vendita</th>
+                                        <th>Ultimo Accesso</th>
+                                        <th>Stato</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var responsabile in responsabili)
+                                    {
+                                        <tr>
+                                            <td><code>@responsabile.Username</code></td>
+                                            <td>@(string.IsNullOrWhiteSpace(responsabile.NomeCompleto) ? "(Da completare)" : responsabile.NomeCompleto)</td>
+                                            <td>@responsabile.Email</td>
+                                            <td>
+                                                @if (responsabile.PuntiVendita.Any())
+                                                {
+                                                    @foreach (var pv in responsabile.PuntiVendita)
+                                                    {
+                                                        <span class="badge bg-primary me-1">@pv.Codice</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (responsabile.UltimoAccesso.HasValue)
+                                                {
+                                                    <small>@responsabile.UltimoAccesso.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">Mai</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (responsabile.Attivo)
+                                                {
+                                                    <span class="badge bg-success">Attivo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Non attivo</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-outline-primary" @onclick="() => ApriModaleModificaResponsabile(responsabile)">
+                                                        <i class="bi bi-pencil"></i> Modifica
+                                                    </button>
+                                                    <button class="btn btn-outline-danger" @onclick="() => ApriModaleEliminazioneResponsabile(responsabile)">
+                                                        <i class="bi bi-trash"></i> Elimina
                                                     </button>
                                                 </div>
                                             </td>
@@ -247,7 +333,7 @@
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
                     <h5 class="modal-title text-white">
                         @(negozioInModifica == null ? "Nuovo Negozio" : "Modifica Negozio")
                     </h5>
@@ -341,6 +427,131 @@
     </div>
 }
 
+<!-- Modal Crea Responsabile -->
+@if (mostraModaleResponsabile)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+                    <h5 class="modal-title text-white">@(responsabileInModifica == null ? "Nuovo Responsabile" : "Modifica Responsabile")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleResponsabile"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Username</label>
+                        <input @bind="responsabileForm.Username" 
+                               class="form-control" 
+                               placeholder="mario.rossi" 
+                               readonly="@(responsabileInModifica != null)" />
+                        <small class="text-muted">@(responsabileInModifica == null ? "Username univoco (evita pattern RExx per non confondere con auto-generati)" : "L'username non può essere modificato")</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome Completo</label>
+                        <input @bind="responsabileForm.NomeCompleto" class="form-control" placeholder="Mario Rossi" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <input @bind="responsabileForm.Email" type="email" class="form-control" placeholder="mario.rossi@example.com" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Password (opzionale)</label>
+                        <input @bind="responsabileForm.Password" type="password" class="form-control" placeholder="Suns2024!" />
+                        <small class="text-muted">Se vuoto, verrà usata la password predefinita: Suns2024!</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Punti Vendita</label>
+                        @foreach (var pv in puntiVendita)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       checked="@responsabileForm.PuntiVenditaIds.Contains(pv.Id)"
+                                       @onchange="@(e => TogglePuntoVendita(pv.Id, (bool)e.Value))"
+                                       id="pv_@pv.Id">
+                                <label class="form-check-label" for="pv_@pv.Id">
+                                    <code>@pv.Codice</code> - @pv.Nome (@pv.Citta)
+                                </label>
+                            </div>
+                        }
+                        @if (!responsabileForm.PuntiVenditaIds.Any())
+                        {
+                            <small class="text-danger d-block mt-1">Seleziona almeno un punto vendita</small>
+                        }
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" @bind="responsabileForm.RichiestaResetPassword" id="checkResetPwd">
+                        <label class="form-check-label" for="checkResetPwd">
+                            Richiedi cambio password al primo accesso
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" @bind="responsabileForm.Attivo" id="checkAttivoResp">
+                        <label class="form-check-label" for="checkAttivoResp">
+                            Responsabile attivo
+                        </label>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(messaggioErroreResponsabile))
+                    {
+                        <div class="alert alert-danger mt-3">@messaggioErroreResponsabile</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ChiudiModaleResponsabile">Annulla</button>
+                    <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;" 
+                            @onclick="SalvaResponsabile" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        @(responsabileInModifica == null ? "Crea" : "Salva Modifiche")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Elimina Responsabile -->
+@if (mostraModaleEliminazioneResponsabile && responsabileInEliminazione != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Conferma Eliminazione</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleEliminazioneResponsabile"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sei sicuro di voler eliminare il responsabile <strong>@responsabileInEliminazione.Username</strong> (@responsabileInEliminazione.NomeCompleto)?</p>
+                    @if (responsabileInEliminazione.PuntiVendita.Any())
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Questo responsabile è assegnato a <strong>@responsabileInEliminazione.PuntiVendita.Count punto/i vendita</strong>.
+                            Le associazioni verranno eliminate.
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(messaggioErroreEliminazioneResponsabile))
+                    {
+                        <div class="alert alert-danger">@messaggioErroreEliminazioneResponsabile</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ChiudiModaleEliminazioneResponsabile">Annulla</button>
+                    <button class="btn btn-danger" @onclick="EliminaResponsabile" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Elimina
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string nomeCompleto = "";
     private string authToken = "";
@@ -365,6 +576,16 @@
     private PuntoVenditaRequest negozioForm = new();
     private string messaggioErroreNegozio = "";
     private string messaggioErroreEliminazione = "";
+
+    // Manager management
+    private List<ResponsabileDetailResponse> responsabili = new();
+    private bool mostraModaleResponsabile = false;
+    private bool mostraModaleEliminazioneResponsabile = false;
+    private ResponsabileDetailResponse? responsabileInModifica = null;
+    private ResponsabileDetailResponse? responsabileInEliminazione = null;
+    private ResponsabileRequest responsabileForm = new();
+    private string messaggioErroreResponsabile = "";
+    private string messaggioErroreEliminazioneResponsabile = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -400,6 +621,9 @@
             
             // Carica tutti i clienti
             clienti = await Http.GetFromJsonAsync<List<ClienteResponse>>("api/Clienti/mio-punto-vendita") ?? new();
+            
+            // Carica responsabili
+            responsabili = await Http.GetFromJsonAsync<List<ResponsabileDetailResponse>>("api/Responsabili") ?? new();
             
             totaleClienti = clienti.Count;
             puntiTotali = clienti.Sum(c => c.PuntiTotali);
@@ -484,18 +708,27 @@
 
             if (response.IsSuccessStatusCode)
             {
+                // Per evitare problemi con il parsing della risposta, ricarica semplicemente i dati
+                await Task.Delay(500); // Piccolo delay per assicurare che il DB sia aggiornato
                 await CaricaDati();
                 ChiudiModaleNegozio();
             }
             else
             {
-                var error = await response.Content.ReadAsStringAsync();
-                messaggioErroreNegozio = "Errore durante il salvataggio del negozio.";
+                try
+                {
+                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    messaggioErroreNegozio = errorObj?["messaggio"] ?? "Errore durante il salvataggio del negozio.";
+                }
+                catch
+                {
+                    messaggioErroreNegozio = "Errore durante il salvataggio del negozio.";
+                }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            messaggioErroreNegozio = "Errore di connessione.";
+            messaggioErroreNegozio = $"Errore di connessione: {ex.Message}";
         }
         finally
         {
@@ -542,6 +775,179 @@
         catch
         {
             messaggioErroreEliminazione = "Errore di connessione.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Manager CRUD operations
+    private void ApriModaleCrezioneResponsabile()
+    {
+        responsabileInModifica = null;
+        responsabileForm = new ResponsabileRequest { Attivo = true, RichiestaResetPassword = true };
+        messaggioErroreResponsabile = "";
+        mostraModaleResponsabile = true;
+    }
+
+    private void ApriModaleModificaResponsabile(ResponsabileDetailResponse responsabile)
+    {
+        responsabileInModifica = responsabile;
+        responsabileForm = new ResponsabileRequest
+        {
+            Username = responsabile.Username,
+            NomeCompleto = responsabile.NomeCompleto,
+            Email = responsabile.Email,
+            PuntiVenditaIds = responsabile.PuntiVendita.Select(pv => pv.Id).ToList(),
+            RichiestaResetPassword = responsabile.RichiestaResetPassword,
+            Attivo = responsabile.Attivo
+        };
+        messaggioErroreResponsabile = "";
+        mostraModaleResponsabile = true;
+    }
+
+    private void ChiudiModaleResponsabile()
+    {
+        mostraModaleResponsabile = false;
+        responsabileInModifica = null;
+        messaggioErroreResponsabile = "";
+    }
+
+    private void TogglePuntoVendita(int pvId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!responsabileForm.PuntiVenditaIds.Contains(pvId))
+            {
+                responsabileForm.PuntiVenditaIds.Add(pvId);
+            }
+        }
+        else
+        {
+            responsabileForm.PuntiVenditaIds.Remove(pvId);
+        }
+    }
+
+    private async Task SalvaResponsabile()
+    {
+        isLoading = true;
+        messaggioErroreResponsabile = "";
+
+        try
+        {
+            // Validate form
+            if (string.IsNullOrWhiteSpace(responsabileForm.Username))
+            {
+                messaggioErroreResponsabile = "Username obbligatorio";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(responsabileForm.NomeCompleto))
+            {
+                messaggioErroreResponsabile = "Nome completo obbligatorio";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(responsabileForm.Email))
+            {
+                messaggioErroreResponsabile = "Email obbligatoria";
+                return;
+            }
+
+            if (!responsabileForm.PuntiVenditaIds.Any())
+            {
+                messaggioErroreResponsabile = "Seleziona almeno un punto vendita";
+                return;
+            }
+
+            HttpResponseMessage response;
+            if (responsabileInModifica == null)
+            {
+                // Create new
+                response = await Http.PostAsJsonAsync("api/Responsabili", responsabileForm);
+            }
+            else
+            {
+                // Update existing
+                response = await Http.PutAsJsonAsync($"api/Responsabili/{responsabileInModifica.Id}", responsabileForm);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                await Task.Delay(500);
+                await CaricaDati();
+                ChiudiModaleResponsabile();
+            }
+            else
+            {
+                try
+                {
+                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    messaggioErroreResponsabile = errorObj?["messaggio"] ?? "Errore durante la creazione del responsabile.";
+                }
+                catch
+                {
+                    messaggioErroreResponsabile = "Errore durante la creazione del responsabile.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            messaggioErroreResponsabile = $"Errore di connessione: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApriModaleEliminazioneResponsabile(ResponsabileDetailResponse responsabile)
+    {
+        responsabileInEliminazione = responsabile;
+        messaggioErroreEliminazioneResponsabile = "";
+        mostraModaleEliminazioneResponsabile = true;
+    }
+
+    private void ChiudiModaleEliminazioneResponsabile()
+    {
+        mostraModaleEliminazioneResponsabile = false;
+        responsabileInEliminazione = null;
+        messaggioErroreEliminazioneResponsabile = "";
+    }
+
+    private async Task EliminaResponsabile()
+    {
+        if (responsabileInEliminazione == null) return;
+
+        isLoading = true;
+        messaggioErroreEliminazioneResponsabile = "";
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Responsabili/{responsabileInEliminazione.Id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                await CaricaDati();
+                ChiudiModaleEliminazioneResponsabile();
+            }
+            else
+            {
+                try
+                {
+                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    messaggioErroreEliminazioneResponsabile = errorObj?["messaggio"] ?? "Impossibile eliminare il responsabile.";
+                }
+                catch
+                {
+                    messaggioErroreEliminazioneResponsabile = "Impossibile eliminare il responsabile.";
+                }
+            }
+        }
+        catch
+        {
+            messaggioErroreEliminazioneResponsabile = "Errore di connessione.";
         }
         finally
         {

@@ -14,6 +14,7 @@ namespace Fidelity.Server.Data
         public DbSet<Cliente> Clienti { get; set; }
         public DbSet<PuntoVendita> PuntiVendita { get; set; }
         public DbSet<Responsabile> Responsabili { get; set; }
+        public DbSet<ResponsabilePuntoVendita> ResponsabilePuntiVendita { get; set; }
         public DbSet<TokenRegistrazione> TokenRegistrazione { get; set; }
         public DbSet<Transazione> Transazioni { get; set; }
 
@@ -54,6 +55,21 @@ namespace Fidelity.Server.Data
                 .WithMany()
                 .HasForeignKey(c => c.ResponsabileRegistrazioneId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ResponsabilePuntoVendita>()
+                .HasKey(rp => new { rp.ResponsabileId, rp.PuntoVenditaId });
+
+            modelBuilder.Entity<ResponsabilePuntoVendita>()
+                .HasOne(rp => rp.Responsabile)
+                .WithMany(r => r.ResponsabilePuntiVendita)
+                .HasForeignKey(rp => rp.ResponsabileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ResponsabilePuntoVendita>()
+                .HasOne(rp => rp.PuntoVendita)
+                .WithMany(pv => pv.ResponsabilePuntiVendita)
+                .HasForeignKey(rp => rp.PuntoVenditaId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

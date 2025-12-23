@@ -94,16 +94,21 @@
                 await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
                 await JS.InvokeVoidAsync("localStorage.setItem", "username", result.Username);
                 await JS.InvokeVoidAsync("localStorage.setItem", "ruolo", result.Ruolo);
-                await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", result.NomeCompleto);
+                await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", result.NomeCompleto ?? "");
                 await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaId", result.PuntoVenditaId?.ToString() ?? "");
                 await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaCodice", result.PuntoVenditaCodice ?? "");
                 await JS.InvokeVoidAsync("localStorage.setItem", "puntoVenditaNome", result.PuntoVenditaNome ?? "");
                 await JS.InvokeVoidAsync("localStorage.setItem", "richiestaResetPassword", result.RichiestaResetPassword.ToString().ToLower());
+                await JS.InvokeVoidAsync("localStorage.setItem", "profiloIncompleto", result.ProfiloIncompleto.ToString().ToLower());
                 
                 // Redirect basato su ruolo e stato
                 if (result.RichiestaResetPassword)
                 {
                     Navigation.NavigateTo("/cambia-password");
+                }
+                else if (result.ProfiloIncompleto)
+                {
+                    Navigation.NavigateTo("/completa-profilo");
                 }
                 else if (result.Ruolo == "Admin")
                 {
