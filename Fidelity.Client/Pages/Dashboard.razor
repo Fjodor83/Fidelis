@@ -6,6 +6,85 @@
 
 <PageTitle>Dashboard Admin - Suns</PageTitle>
 
+<style>
+    /* Custom tab styling with green gradient scale */
+    .tab-green-1 {
+        border: none !important;
+        background: transparent;
+        color: #666;
+        font-weight: 500;
+        border-bottom: 3px solid transparent !important;
+        transition: all 0.3s ease;
+    }
+    .tab-green-1.active {
+        background: linear-gradient(135deg, #7bc96f 0%, #52ab47 100%) !important;
+        color: white !important;
+        border-bottom: 3px solid #52ab47 !important;
+        box-shadow: 0 2px 8px rgba(123, 201, 111, 0.3);
+    }
+    .tab-green-1:hover:not(.active) {
+        background: rgba(123, 201, 111, 0.1);
+        color: #52ab47;
+    }
+
+    .tab-green-2 {
+        border: none !important;
+        background: transparent;
+        color: #666;
+        font-weight: 500;
+        border-bottom: 3px solid transparent !important;
+        transition: all 0.3s ease;
+    }
+    .tab-green-2.active {
+        background: linear-gradient(135deg, #52ab47 0%, #2d8a27 100%) !important;
+        color: white !important;
+        border-bottom: 3px solid #2d8a27 !important;
+        box-shadow: 0 2px 8px rgba(82, 171, 71, 0.3);
+    }
+    .tab-green-2:hover:not(.active) {
+        background: rgba(82, 171, 71, 0.1);
+        color: #2d8a27;
+    }
+
+    .tab-green-3 {
+        border: none !important;
+        background: transparent;
+        color: #666;
+        font-weight: 500;
+        border-bottom: 3px solid transparent !important;
+        transition: all 0.3s ease;
+    }
+    .tab-green-3.active {
+        background: linear-gradient(135deg, #2d8a27 0%, #105a12 100%) !important;
+        color: white !important;
+        border-bottom: 3px solid #105a12 !important;
+        box-shadow: 0 2px 8px rgba(45, 138, 39, 0.3);
+    }
+    .tab-green-3:hover:not(.active) {
+        background: rgba(45, 138, 39, 0.1);
+        color: #105a12;
+    }
+
+    .tab-green-4 {
+        border: none !important;
+        background: transparent;
+        color: #666;
+        font-weight: 500;
+        border-bottom: 3px solid transparent !important;
+        transition: all 0.3s ease;
+    }
+    .tab-green-4.active {
+        background: linear-gradient(135deg, #105a12 0%, #053e30 100%) !important;
+        color: white !important;
+        border-bottom: 3px solid #053e30 !important;
+        box-shadow: 0 2px 8px rgba(16, 90, 18, 0.3);
+    }
+    .tab-green-4:hover:not(.active) {
+        background: rgba(16, 90, 18, 0.1);
+        color: #053e30;
+    }
+</style>
+
 <div class="min-vh-100" style="background-color: #f8f9fa;">
     <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
         <div class="container-fluid">
@@ -27,13 +106,15 @@
         <!-- Global Statistics Cards -->
         <div class="row g-4 mb-4">
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0" style="font-size: 2.5rem;">👥</div>
+                            <div class="flex-shrink-0 rounded-3 p-3" style="background: linear-gradient(135deg, #7bc96f 0%, #52ab47 100%);">
+                                <i class="bi bi-people-fill text-white" style="font-size: 2rem;"></i>
+                            </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1">Clienti Totali</h6>
-                                <h2 class="mb-0">@totaleClienti</h2>
+                                <h6 class="text-muted mb-1 small">Clienti Totali</h6>
+                                <h2 class="mb-0 fw-bold" style="color: #52ab47;">@totaleClienti</h2>
                             </div>
                         </div>
                     </div>
@@ -41,13 +122,15 @@
             </div>
             
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0" style="font-size: 2.5rem;">🏪</div>
+                            <div class="flex-shrink-0 rounded-3 p-3" style="background: linear-gradient(135deg, #52ab47 0%, #2d8a27 100%);">
+                                <i class="bi bi-shop text-white" style="font-size: 2rem;"></i>
+                            </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1">Punti Vendita</h6>
-                                <h2 class="mb-0">@puntiVendita.Count</h2>
+                                <h6 class="text-muted mb-1 small">Punti Vendita</h6>
+                                <h2 class="mb-0 fw-bold" style="color: #2d8a27;">@puntiVendita.Count</h2>
                             </div>
                         </div>
                     </div>
@@ -55,13 +138,15 @@
             </div>
 
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0" style="font-size: 2.5rem;">⭐</div>
+                            <div class="flex-shrink-0 rounded-3 p-3" style="background: linear-gradient(135deg, #2d8a27 0%, #105a12 100%);">
+                                <i class="bi bi-award-fill text-white" style="font-size: 2rem;"></i>
+                            </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1">Punti Fedeltà</h6>
-                                <h2 class="mb-0">@puntiTotali</h2>
+                                <h6 class="text-muted mb-1 small">Punti Fedeltà</h6>
+                                <h2 class="mb-0 fw-bold" style="color: #105a12;">@puntiTotali</h2>
                             </div>
                         </div>
                     </div>
@@ -69,13 +154,15 @@
             </div>
 
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4">
                         <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0" style="font-size: 2.5rem;">📈</div>
+                            <div class="flex-shrink-0 rounded-3 p-3" style="background: linear-gradient(135deg, #105a12 0%, #053e30 100%);">
+                                <i class="bi bi-person-badge-fill text-white" style="font-size: 2rem;"></i>
+                            </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="text-muted mb-1">Media/Negozio</h6>
-                                <h2 class="mb-0">@mediaClientiPerNegozio</h2>
+                                <h6 class="text-muted mb-1 small">Responsabili</h6>
+                                <h2 class="mb-0 fw-bold" style="color: #053e30;">@responsabili.Count</h2>
                             </div>
                         </div>
                     </div>
@@ -83,18 +170,43 @@
             </div>
         </div>
 
-        <!-- Store Statistics Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Statistiche per Negozio</h5>
-                    </div>
-                    <div class="card-body">
+        <!-- Tabbed Navigation -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <ul class="nav nav-tabs border-0" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-green-1 @(activeTab == "overview" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "overview"' type="button">
+                            <i class="bi bi-speedometer2 me-2"></i>Panoramica
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-green-2 @(activeTab == "stores" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "stores"' type="button">
+                            <i class="bi bi-shop me-2"></i>Punti Vendita
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-green-3 @(activeTab == "managers" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "managers"' type="button">
+                            <i class="bi bi-people me-2"></i>Responsabili
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-green-4 @(activeTab == "clients" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "clients"' type="button">
+                            <i class="bi bi-person-badge me-2"></i>Clienti
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-4">
+                <div class="tab-content" id="dashboardTabsContent">
+                    
+                    <!-- Overview Tab -->
+                    @if (activeTab == "overview")
+                    {
+                        <h5 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Statistiche per Negozio</h5>
                         <div class="row g-3">
                             @foreach (var pv in puntiVendita.OrderByDescending(p => p.NumeroClienti))
                             {
-                                <div class="col-md-6 col-lg-4">
+                                <div class="col-md-6 col-lg-3">
                                     <div class="card border @(pv.Attivo ? "border-success" : "border-secondary")">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -119,26 +231,18 @@
                                 </div>
                             }
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    }
 
-        <!-- Store Management Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-shop"></i> Gestione Negozi</h5>
-                            <button class="btn btn-primary" @onclick="ApriModaleCreazione">
+                    @if (activeTab == "stores")
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0"><i class="bi bi-shop me-2"></i>Gestione Negozi</h5>
+                            <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;" @onclick="ApriModaleCreazione">
                                 <i class="bi bi-plus-circle"></i> Nuovo Negozio
                             </button>
                         </div>
-                    </div>
-                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Codice</th>
@@ -186,26 +290,18 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    }
 
-        <!-- Managers Management Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-people"></i> Gestione Responsabili</h5>
+                    @if (activeTab == "managers")
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0"><i class="bi bi-people me-2"></i>Gestione Responsabili</h5>
                             <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;" @onclick="ApriModaleCrezioneResponsabile">
                                 <i class="bi bi-plus-circle"></i> Nuovo Responsabile
                             </button>
                         </div>
-                    </div>
-                    <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Username</th>
@@ -272,19 +368,13 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    }
 
-        <!-- Client Search Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <div class="row align-items-center">
+                    @if (activeTab == "clients")
+                    {
+                        <div class="row align-items-center mb-4">
                             <div class="col-md-6">
-                                <h5 class="mb-0"><i class="bi bi-people"></i> Ricerca Clienti</h5>
+                                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Ricerca Clienti</h5>
                             </div>
                             <div class="col-md-6">
                                 <div class="input-group">
@@ -297,30 +387,45 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        @if (clienteTrovato != null)
+                        @if (clientiTrovati.Any())
                         {
-                            <div class="alert alert-info">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6>@clienteTrovato.NomeCompleto</h6>
-                                        <p class="mb-1"><strong>Email:</strong> @clienteTrovato.Email</p>
-                                        <p class="mb-1"><strong>Codice:</strong> @clienteTrovato.CodiceFidelity</p>
-                                        <p class="mb-1"><strong>Punti:</strong> @clienteTrovato.PuntiTotali</p>
-                                        <p class="mb-0"><strong>Negozio:</strong> @clienteTrovato.PuntoVenditaRegistrazione (@clienteTrovato.PuntoVenditaCodice)</p>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-secondary" @onclick="@(() => { clienteTrovato = null; ricercaCliente = ""; })">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                </div>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-hover">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <th>Codice</th>
+                                            <th>Punti</th>
+                                            <th>Negozio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var cliente in clientiTrovati)
+                                        {
+                                            <tr>
+                                                <td><strong>@cliente.NomeCompleto</strong></td>
+                                                <td>@cliente.Email</td>
+                                                <td><code>@cliente.CodiceFidelity</code></td>
+                                                <td><span class="badge bg-primary">@cliente.PuntiTotali</span></td>
+                                                <td>@cliente.PuntoVenditaRegistrazione (@cliente.PuntoVenditaCodice)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
+                            <p class="text-muted text-center mb-0 mt-2"><small>Trovati @clientiTrovati.Count risultati (max 10)</small></p>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(ricercaCliente) && ricercaCliente.Length >= 3)
+                        {
+                            <p class="text-muted text-center mb-0">Nessun cliente trovato per "@ricercaCliente"</p>
                         }
                         else
                         {
                             <p class="text-muted text-center mb-0">Inserisci almeno 3 caratteri per cercare un cliente</p>
                         }
-                    </div>
+                    }
+
                 </div>
             </div>
         </div>
@@ -557,9 +662,12 @@
     private string authToken = "";
     private string ruolo = "";
 
+    // Tab state
+    private string activeTab = "overview";
+
     private bool isLoading = false;
     private string ricercaCliente = "";
-    private ClienteResponse? clienteTrovato = null;
+    private List<ClienteResponse> clientiTrovati = new();
     
     private List<ClienteResponse> clienti = new();
     private List<PuntoVenditaResponse> puntiVendita = new();
@@ -640,17 +748,17 @@
     {
         if (string.IsNullOrWhiteSpace(ricercaCliente) || ricercaCliente.Length < 3)
         {
-            clienteTrovato = null;
+            clientiTrovati = new();
             return;
         }
 
         try
         {
-            clienteTrovato = await Http.GetFromJsonAsync<ClienteResponse>($"api/Clienti/cerca?query={ricercaCliente}");
+            clientiTrovati = await Http.GetFromJsonAsync<List<ClienteResponse>>($"api/Clienti/cerca?query={ricercaCliente}") ?? new();
         }
         catch
         {
-            clienteTrovato = null;
+            clientiTrovati = new();
         }
     }
 

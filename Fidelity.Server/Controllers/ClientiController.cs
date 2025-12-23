@@ -24,7 +24,7 @@ namespace Fidelity.Server.Controllers
         /// Cerca un cliente per codice fedeltà o email
         /// </summary>
         [HttpGet("cerca")]
-        public async Task<ActionResult<ClienteResponse>> CercaCliente([FromQuery] string query)
+        public async Task<ActionResult<List<ClienteResponse>>> CercaCliente([FromQuery] string query)
         {
             if (string.IsNullOrWhiteSpace(query) || query.Length < 3)
             {
@@ -37,11 +37,14 @@ namespace Fidelity.Server.Controllers
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
                 var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // Cerca per codice fedeltà o email
-                var cliente = await _context.Clienti
+                // Cerca per codice fedeltà, email, nome o cognome (parziale)
+                var clienti = await _context.Clienti
                     .Include(c => c.PuntoVenditaRegistrazione)
                     .Where(c => 
-                        (c.CodiceFidelity == query || c.Email.Contains(query)) &&
+                        (c.CodiceFidelity.Contains(query) || 
+                         c.Email.Contains(query) ||
+                         c.Nome.Contains(query) ||
+                         c.Cognome.Contains(query)) &&
                         (ruolo == "Admin" || c.PuntoVenditaRegistrazioneId.ToString() == puntoVenditaIdClaim))
                     .Select(c => new ClienteResponse
                     {
@@ -56,14 +59,10 @@ namespace Fidelity.Server.Controllers
                         PuntoVenditaCodice = c.PuntoVenditaRegistrazione.Codice,
                         Attivo = c.Attivo
                     })
-                    .FirstOrDefaultAsync();
+                    .Take(10) // Limita a 10 risultati per non sovraccaricare la UI
+                    .ToListAsync();
 
-                if (cliente == null)
-                {
-                    return NotFound(new { messaggio = "Cliente non trovato." });
-                }
-
-                return Ok(cliente);
+                return Ok(clienti);
             }
             catch (Exception ex)
             {

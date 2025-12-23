@@ -65,7 +65,7 @@ namespace Fidelity.Server.Services
                 using (var fontLogo = new Font("Arial", 48, FontStyle.Bold))
                 using (var brushWhite = new SolidBrush(Color.White))
                 {
-                    graphics.DrawString("☀️ SUNS", fontLogo, brushWhite, new PointF(40, 40));
+                    graphics.DrawString("SUNS", fontLogo, brushWhite, new PointF(50, 50));
                 }
             }
 
