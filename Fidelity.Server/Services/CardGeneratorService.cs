@@ -12,6 +12,7 @@ namespace Fidelity.Server.Services
 {
     public class CardGeneratorService : ICardGeneratorService
     {
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public async Task<byte[]> GeneraCardDigitaleAsync(Cliente cliente, PuntoVendita puntoVendita)
         {
             await Task.CompletedTask;

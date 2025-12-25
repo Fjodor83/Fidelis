@@ -1,0 +1,192 @@
+@using Fidelity.Shared.DTOs
+@inject HttpClient Http
+
+<div class="row g-4 mb-4">
+    <!-- KPI Cards -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Totale Clienti</h6>
+                        <h2 class="mb-0 fw-bold">@stats.TotaleClienti</h2>
+                    </div>
+                </div>
+                <div class="mt-3 small text-muted">
+                    <span class="text-success fw-bold">@stats.ClientiRegistratiOggi</span> oggi
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Punti Emessi</h6>
+                        <h2 class="mb-0 fw-bold">@FormatNumber(stats.PuntiTotaliEmessi)</h2>
+                    </div>
+                </div>
+                 <div class="mt-3 small text-muted">
+                    <span class="text-dark fw-bold">@stats.TransazioniOggi</span> op. oggi
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Coupon Attivi</h6>
+                        <h2 class="mb-0 fw-bold">@stats.CouponAttivi</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted fw-normal mb-1">Coupon Riscattati</h6>
+                        <h2 class="mb-0 fw-bold">@stats.CouponRiscattati</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+     <!-- Registrations Chart -->
+     <div class="col-lg-8 mb-4">
+         <div class="card border-0 shadow-sm h-100">
+             <div class="card-header bg-white py-3">
+                 <h5 class="mb-0">Registrazioni (Ultimi 30 giorni)</h5>
+             </div>
+             <div class="card-body">
+                 @if(isLoading)
+                 {
+                    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+                 }
+                 else
+                 {
+                     <div class="chart-container d-flex align-items-end justify-content-between h-100 pb-2" style="min-height: 250px;">
+                         @if(registrationHistory.Any())
+                         {
+                             var max = registrationHistory.Max(x => x.Count);
+                             max = max == 0 ? 1 : max;
+                             
+                             @foreach(var item in registrationHistory)
+                             {
+                                 var height = (item.Count / (double)max) * 100;
+                                 <div class="d-flex flex-column align-items-center" style="width: 3%;">
+                                     <div class="bg-primary rounded-top w-100" 
+                                          style="height: @(height)%; opacity: 0.7; min-height: 2px;" 
+                                          title="@item.Data.ToString("dd/MM"): @item.Count"></div>
+                                 </div>
+                             }
+                         }
+                         else
+                         {
+                             <p class="text-muted mx-auto align-self-center">Dati non disponibili</p>
+                         }
+                     </div>
+                 }
+             </div>
+         </div>
+     </div>
+
+     <!-- Recent Activity -->
+     <div class="col-lg-4 mb-4">
+         <div class="card border-0 shadow-sm h-100">
+             <div class="card-header bg-white py-3">
+                 <h5 class="mb-0">Attività Recente</h5>
+             </div>
+             <div class="card-body p-0">
+                 @if(isLoading)
+                 {
+                    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+                 }
+                 else
+                 {
+                     <div class="list-group list-group-flush">
+                         @foreach(var act in recentActivity)
+                         {
+                             <div class="list-group-item px-4 py-3">
+                                 <div class="d-flex w-100 justify-content-between">
+                                     <h6 class="mb-1 text-truncate" style="max-width: 150px;">@act.NomeCliente</h6>
+                                     <small class="text-muted">@GetTimeAgo(act.Data)</small>
+                                 </div>
+                                 <p class="mb-1 small">
+                                     @if(act.Tipo == "Punti")
+                                     {
+                                         <span class="badge bg-warning text-dark me-1">Punti</span>
+                                     }
+                                     else
+                                     {
+                                          <span class="badge bg-info text-dark me-1">Coupon</span>
+                                     }
+                                     @act.Descrizione
+                                 </p>
+                                 <small class="text-muted">@act.NomePuntoVendita</small>
+                             </div>
+                         }
+                     </div>
+                 }
+             </div>
+         </div>
+     </div>
+</div>
+
+@code {
+    private DashboardStatsDTO stats = new();
+    private List<RegistrationStatsDTO> registrationHistory = new();
+    private List<RecentActivityDTO> recentActivity = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            stats = await Http.GetFromJsonAsync<DashboardStatsDTO>("api/Analytics/stats") ?? new();
+            registrationHistory = await Http.GetFromJsonAsync<List<RegistrationStatsDTO>>("api/Analytics/registrations-history") ?? new();
+            recentActivity = await Http.GetFromJsonAsync<List<RecentActivityDTO>>("api/Analytics/recent-activity") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento analitica: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string FormatNumber(int num)
+    {
+        if (num >= 1000)
+            return (num / 1000.0).ToString("0.k");
+        return num.ToString();
+    }
+
+    private string GetTimeAgo(DateTime data)
+    {
+        var span = DateTime.UtcNow - data;
+        if (span.TotalMinutes < 1) return "adesso";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m fa";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h fa";
+        return data.ToString("dd/MM");
+    }
+}

@@ -1,10 +1,8 @@
-// Fidelity.Server/Controllers/ClientiController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
 using Fidelity.Shared.DTOs;
 using System.Security.Claims;
+using Fidelity.Server.Services;
 
 namespace Fidelity.Server.Controllers
 {
@@ -13,11 +11,11 @@ namespace Fidelity.Server.Controllers
     [Authorize]
     public class ClientiController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IClienteService _clienteService;
 
-        public ClientiController(ApplicationDbContext context)
+        public ClientiController(IClienteService clienteService)
         {
-            _context = context;
+            _clienteService = clienteService;
         }
 
         /// <summary>
@@ -26,44 +24,16 @@ namespace Fidelity.Server.Controllers
         [HttpGet("cerca")]
         public async Task<ActionResult<List<ClienteResponse>>> CercaCliente([FromQuery] string query)
         {
-            if (string.IsNullOrWhiteSpace(query) || query.Length < 3)
-            {
-                return BadRequest(new { messaggio = "Query di ricerca troppo breve. Minimo 3 caratteri." });
-            }
-
             try
             {
-                // Ottieni PuntoVenditaId del responsabile autenticato
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
+                int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
                 var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // Cerca per codice fedeltà, email, nome o cognome (parziale)
-                var clienti = await _context.Clienti
-                    .Include(c => c.PuntoVenditaRegistrazione)
-                    .Where(c => 
-                        (c.CodiceFidelity.Contains(query) || 
-                         c.Email.Contains(query) ||
-                         c.Nome.Contains(query) ||
-                         c.Cognome.Contains(query)) &&
-                        (ruolo == "Admin" || c.PuntoVenditaRegistrazioneId.ToString() == puntoVenditaIdClaim))
-                    .Select(c => new ClienteResponse
-                    {
-                        Id = c.Id,
-                        CodiceFidelity = c.CodiceFidelity,
-                        NomeCompleto = $"{c.Nome} {c.Cognome}",
-                        Email = c.Email,
-                        Telefono = c.Telefono,
-                        PuntiTotali = c.PuntiTotali,
-                        DataRegistrazione = c.DataRegistrazione,
-                        PuntoVenditaRegistrazione = c.PuntoVenditaRegistrazione.Nome,
-                        PuntoVenditaCodice = c.PuntoVenditaRegistrazione.Codice,
-                        Attivo = c.Attivo
-                    })
-                    .Take(10) // Limita a 10 risultati per non sovraccaricare la UI
-                    .ToListAsync();
-
-                return Ok(clienti);
+                var result = await _clienteService.CercaClientiAsync(query, ruolo, puntoVenditaId);
+                return Ok(result);
             }
+            catch (ArgumentException ex) { return BadRequest(new { messaggio = ex.Message }); }
             catch (Exception ex)
             {
                 return StatusCode(500, new { messaggio = "Errore durante la ricerca del cliente.", errore = ex.Message });
@@ -79,43 +49,13 @@ namespace Fidelity.Server.Controllers
             try
             {
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
+                int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
                 var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                if (ruolo != "Admin" && string.IsNullOrEmpty(puntoVenditaIdClaim))
-                {
-                    return BadRequest(new { messaggio = "Punto vendita non trovato." });
-                }
-
-                IQueryable<Shared.Models.Cliente> query = _context.Clienti
-                    .Include(c => c.PuntoVenditaRegistrazione);
-
-                // Se non è Admin, filtra per punto vendita
-                if (ruolo != "Admin")
-                {
-                    var puntoVenditaId = int.Parse(puntoVenditaIdClaim!);
-                    query = query.Where(c => c.PuntoVenditaRegistrazioneId == puntoVenditaId);
-                }
-
-                var clienti = await query
-                    .Where(c => c.Attivo)
-                    .OrderByDescending(c => c.DataRegistrazione)
-                    .Select(c => new ClienteResponse
-                    {
-                        Id = c.Id,
-                        CodiceFidelity = c.CodiceFidelity,
-                        NomeCompleto = $"{c.Nome} {c.Cognome}",
-                        Email = c.Email,
-                        Telefono = c.Telefono,
-                        PuntiTotali = c.PuntiTotali,
-                        DataRegistrazione = c.DataRegistrazione,
-                        PuntoVenditaRegistrazione = c.PuntoVenditaRegistrazione.Nome,
-                        PuntoVenditaCodice = c.PuntoVenditaRegistrazione.Codice,
-                        Attivo = c.Attivo
-                    })
-                    .ToListAsync();
-
-                return Ok(clienti);
+                var result = await _clienteService.GetClientiByPuntoVenditaAsync(ruolo, puntoVenditaId);
+                return Ok(result);
             }
+            catch (UnauthorizedAccessException ex) { return BadRequest(new { messaggio = ex.Message }); }
             catch (Exception ex)
             {
                 return StatusCode(500, new { messaggio = "Errore durante il caricamento dei clienti.", errore = ex.Message });
@@ -131,32 +71,12 @@ namespace Fidelity.Server.Controllers
             try
             {
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
+                int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
                 var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                var cliente = await _context.Clienti
-                    .Include(c => c.PuntoVenditaRegistrazione)
-                    .Where(c => c.Id == id &&
-                        (ruolo == "Admin" || c.PuntoVenditaRegistrazioneId.ToString() == puntoVenditaIdClaim))
-                    .Select(c => new ClienteResponse
-                    {
-                        Id = c.Id,
-                        CodiceFidelity = c.CodiceFidelity,
-                        NomeCompleto = $"{c.Nome} {c.Cognome}",
-                        Email = c.Email,
-                        Telefono = c.Telefono,
-                        PuntiTotali = c.PuntiTotali,
-                        DataRegistrazione = c.DataRegistrazione,
-                        PuntoVenditaRegistrazione = c.PuntoVenditaRegistrazione.Nome,
-                        PuntoVenditaCodice = c.PuntoVenditaRegistrazione.Codice,
-                        Attivo = c.Attivo
-                    })
-                    .FirstOrDefaultAsync();
-
-                if (cliente == null)
-                {
-                    return NotFound(new { messaggio = "Cliente non trovato." });
-                }
-
+                var cliente = await _clienteService.GetClienteByIdAsync(id, ruolo, puntoVenditaId);
+                if (cliente == null) return NotFound(new { messaggio = "Cliente non trovato." });
+                
                 return Ok(cliente);
             }
             catch (Exception ex)

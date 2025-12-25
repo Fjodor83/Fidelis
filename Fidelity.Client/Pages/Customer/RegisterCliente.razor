@@ -1,0 +1,209 @@
+@page "/register-cliente"
+@using Fidelity.Shared.DTOs
+@layout LoginLayout
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Registrazione - Fidelis</PageTitle>
+
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0 shadow-lg rounded-3 overflow-hidden">
+            <div class="card-header bg-gradient-customer border-0 py-4 text-center">
+                <i class="bi bi-person-plus text-white display-4"></i>
+                <h3 class="text-white mt-2 mb-0">Registrazione</h3>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-white">
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-exclamation-circle me-2"></i> @errorMessage
+                    </div>
+                }
+
+                <div class="mb-4 text-center">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" checked="@(!item.HasExistingCard)"
+                               @onchange="@(() => ToggleMode(false))">
+                        <label class="btn btn-outline-secondary" for="btnradio1">Nuovo Cliente</label>
+
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" checked="@item.HasExistingCard"
+                               @onchange="@(() => ToggleMode(true))">
+                        <label class="btn btn-outline-secondary" for="btnradio2">Ho già una Card</label>
+                    </div>
+                </div>
+
+                <EditForm Model="@item" OnValidSubmit="HandleRegistration">
+                    <DataAnnotationsValidator />
+
+                    @if (item.HasExistingCard)
+                    {
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-info-circle me-1"></i> Inserisci il codice della tua card fisica per attivare il profilo online.
+                        </div>
+                        <div class="form-floating mb-3">
+                            <InputText id="fidelityCode" class="form-control" @bind-Value="item.ExistingFidelityCode" placeholder="Codice Fidelity (es. SUN...)" />
+                            <label for="fidelityCode">Codice Fidelity</label>
+                            <ValidationMessage For="@(() => item.ExistingFidelityCode)" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-stars me-1"></i> Registrati ora per ottenere subito la tua Card Digitale!
+                        </div>
+                    }
+
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <div class="form-floating">
+                                <InputText id="nome" class="form-control" @bind-Value="item.Nome" placeholder="Nome" />
+                                <label for="nome">Nome</label>
+                                <ValidationMessage For="@(() => item.Nome)" />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-floating">
+                                <InputText id="cognome" class="form-control" @bind-Value="item.Cognome" placeholder="Cognome" />
+                                <label for="cognome">Cognome</label>
+                                <ValidationMessage For="@(() => item.Cognome)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <InputText type="email" id="email" class="form-control" @bind-Value="item.Email" placeholder="Email" />
+                        <label for="email">Email</label>
+                        <ValidationMessage For="@(() => item.Email)" />
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <InputText id="telefono" class="form-control" @bind-Value="item.Telefono" placeholder="Telefono" />
+                        <label for="telefono">Telefono (opzionale)</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <InputText type="password" id="password" class="form-control" @bind-Value="item.Password" placeholder="Password" />
+                        <label for="password">Password (min 6 caratteri)</label>
+                        <ValidationMessage For="@(() => item.Password)" />
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <InputText type="password" id="confirmPassword" class="form-control" @bind-Value="item.ConfirmPassword" placeholder="Conferma Password" />
+                        <label for="confirmPassword">Conferma Password</label>
+                        <ValidationMessage For="@(() => item.ConfirmPassword)" />
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <InputCheckbox id="privacy" class="form-check-input" @bind-Value="item.PrivacyAccepted" />
+                        <label class="form-check-label small text-muted" for="privacy">
+                            Dichiaro di aver letto e accettato la <a href="#" class="text-customer">Privacy Policy</a>
+                        </label>
+                        <ValidationMessage For="@(() => item.PrivacyAccepted)" />
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-customer btn-lg shadow-sm" disabled="@(isBusy || !item.PrivacyAccepted)">
+                            @if (isBusy)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Registrazione...</span>
+                            }
+                            else
+                            {
+                                <span>@(item.HasExistingCard ? "Attiva Account" : "Registrati")</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+
+                <div class="text-center mt-4 border-top pt-3">
+                    <p class="mb-2 text-muted">Hai già un account online?</p>
+                    <a href="/login-cliente" class="text-decoration-none fw-bold text-customer">Accedi qui</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-customer {
+        background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);
+    }
+    .btn-customer {
+        background: linear-gradient(135deg, #7bc96f 0%, #52ab47 100%);
+        color: white;
+        border: none;
+    }
+    .btn-customer:hover {
+        background: linear-gradient(135deg, #52ab47 0%, #2d8a27 100%);
+        color: white;
+    }
+    .text-customer {
+        color: #105a12ff;
+    }
+</style>
+
+@code {
+    private RegisterClienteRequest item = new();
+    private bool isBusy = false;
+    private string errorMessage = "";
+
+    private void ToggleMode(bool hasCard)
+    {
+        item.HasExistingCard = hasCard;
+        item.ExistingFidelityCode = "";
+        errorMessage = "";
+    }
+
+    private async Task HandleRegistration()
+    {
+        if (!item.PrivacyAccepted)
+        {
+            errorMessage = "Devi accettare la privacy policy per procedere.";
+            return;
+        }
+
+        isBusy = true;
+        errorMessage = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Auth/register/cliente", item);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginClienteResponse>();
+                if (result != null && result.Success)
+                {
+                    // Auto-login
+                    await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "nomeCompleto", $"{result.Nome} {result.Cognome}");
+                    await JS.InvokeVoidAsync("localStorage.setItem", "ruolo", "Cliente");
+                    await JS.InvokeVoidAsync("localStorage.setItem", "codiceFidelity", result.CodiceFidelity);
+                    
+                    Navigation.NavigateTo("/profilo");
+                }
+                else
+                {
+                    errorMessage = result?.Messaggio ?? "Errore sconosciuto.";
+                }
+            }
+            else
+            {
+                var dict = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+                errorMessage = dict?.ContainsKey("messaggio") == true ? dict["messaggio"].ToString() : "Errore durante la registrazione.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Errore di connessione: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

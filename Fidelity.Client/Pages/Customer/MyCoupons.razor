@@ -1,0 +1,156 @@
+@page "/miei-coupon"
+@layout CustomerLayout
+@using Fidelity.Shared.DTOs
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>I Miei Coupon - Fidelis</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">I Miei Coupon</h2>
+            <p class="text-muted">Visualizza e utilizza i tuoi sconti esclusivi.</p>
+        </div>
+        <a href="/profilo" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> torna alla Dashboard
+        </a>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+        </div>
+    }
+    else if (!coupons.Any())
+    {
+        <div class="text-center py-5 text-muted bg-white rounded shadow-sm">
+            <i class="bi bi-ticket-perforated display-1 mb-3 d-block opacity-25"></i>
+            <h4>Nessun coupon disponibile</h4>
+            <p>Non hai ancora ricevuto coupon. Continua a fare acquisti per ottenere premi!</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var coupon in coupons)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm coupon-card @(IsScaduto(coupon) ? "expired" : (coupon.Utilizzato ? "used" : "active"))">
+                        <div class="card-body p-4 position-relative overflow-hidden">
+                            <!-- Badge Status -->
+                            <div class="position-absolute top-0 end-0 mt-3 me-3">
+                                @if (coupon.Utilizzato)
+                                {
+                                    <span class="badge bg-secondary">UTILIZZATO</span>
+                                }
+                                else if (IsScaduto(coupon))
+                                {
+                                    <span class="badge bg-danger">SCADUTO</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">ATTIVO</span>
+                                }
+                            </div>
+
+                            <div class="mb-3">
+                                <i class="bi bi-gift fs-1 text-primary"></i>
+                            </div>
+
+                            <h5 class="card-title fw-bold mb-1">@coupon.Titolo</h5>
+                            <p class="card-text text-muted small mb-3">@coupon.Descrizione</p>
+
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-light rounded p-2 px-3 border border-dashed">
+                                    <span class="font-monospace fw-bold text-dark user-select-all">@coupon.Codice</span>
+                                </div>
+                            </div>
+
+                            <div class="small">
+                                @if (coupon.Utilizzato)
+                                {
+                                    <div class="text-muted"><i class="bi bi-check-all me-1"></i> Usato il @coupon.DataUtilizzo?.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                }
+                                else if (IsScaduto(coupon))
+                                {
+                                    <div class="text-danger"><i class="bi bi-clock me-1"></i> Scaduto il @coupon.DataScadenza.ToString("dd/MM/yyyy")</div>
+                                }
+                                else
+                                {
+                                    <div class="text-success"><i class="bi bi-clock-history me-1"></i> Scade il @coupon.DataScadenza.ToString("dd/MM/yyyy")</div>
+                                }
+                            </div>
+                        </div>
+                        @if (!coupon.Utilizzato && !IsScaduto(coupon))
+                        {
+                            <div class="card-footer bg-transparent border-0 pb-3 pt-0">
+                                <small class="text-muted fst-italic">Mostra questo codice in cassa per utilizzare il coupon.</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .coupon-card {
+        transition: transform 0.2s;
+    }
+    .coupon-card:hover {
+        transform: translateY(-5px);
+    }
+    .coupon-card.used {
+        opacity: 0.7;
+        background-color: #f8f9fa;
+    }
+    .coupon-card.expired {
+        opacity: 0.6;
+        background-color: #fff5f5;
+    }
+    .border-dashed {
+        border-style: dashed !important;
+    }
+</style>
+
+@code {
+    private List<CouponAssegnatoDTO> coupons = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/login-cliente");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            coupons = await Http.GetFromJsonAsync<List<CouponAssegnatoDTO>>("api/Coupons/miei-coupon") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento coupon: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool IsScaduto(CouponAssegnatoDTO c)
+    {
+        return !c.Utilizzato && c.DataScadenza < DateTime.UtcNow;
+    }
+}

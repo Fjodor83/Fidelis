@@ -4,6 +4,7 @@ using Fidelity.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fidelity.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251224231546_AssegnaPunti")]
+    partial class AssegnaPunti
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,25 +59,16 @@ namespace Fidelity.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PasswordResetToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("PasswordResetTokenExpiry")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("PrivacyAccettata")
                         .HasColumnType("bit");
 
                     b.Property<int>("PuntiTotali")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PuntoVenditaRegistrazioneId")
+                    b.Property<int>("PuntoVenditaRegistrazioneId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ResponsabileRegistrazioneId")
+                    b.Property<int>("ResponsabileRegistrazioneId")
                         .HasColumnType("int");
 
                     b.Property<string>("Telefono")
@@ -95,86 +89,6 @@ namespace Fidelity.Server.Migrations
                     b.HasIndex("ResponsabileRegistrazioneId");
 
                     b.ToTable("Clienti");
-                });
-
-            modelBuilder.Entity("Fidelity.Shared.Models.Coupon", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Attivo")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Codice")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("DataInizio")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DataScadenza")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Descrizione")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TipoSconto")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Titolo")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal>("ValoreSconto")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Codice")
-                        .IsUnique();
-
-                    b.ToTable("Coupons");
-                });
-
-            modelBuilder.Entity("Fidelity.Shared.Models.CouponAssegnato", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClienteId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CouponId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DataAssegnazione")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DataUtilizzo")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("Utilizzato")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClienteId");
-
-                    b.HasIndex("CouponId");
-
-                    b.ToTable("CouponAssegnati");
                 });
 
             modelBuilder.Entity("Fidelity.Shared.Models.PuntoVendita", b =>
@@ -380,35 +294,18 @@ namespace Fidelity.Server.Migrations
                     b.HasOne("Fidelity.Shared.Models.PuntoVendita", "PuntoVenditaRegistrazione")
                         .WithMany("ClientiRegistrati")
                         .HasForeignKey("PuntoVenditaRegistrazioneId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Fidelity.Shared.Models.Responsabile", "ResponsabileRegistrazione")
                         .WithMany()
                         .HasForeignKey("ResponsabileRegistrazioneId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("PuntoVenditaRegistrazione");
 
                     b.Navigation("ResponsabileRegistrazione");
-                });
-
-            modelBuilder.Entity("Fidelity.Shared.Models.CouponAssegnato", b =>
-                {
-                    b.HasOne("Fidelity.Shared.Models.Cliente", "Cliente")
-                        .WithMany()
-                        .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Fidelity.Shared.Models.Coupon", "Coupon")
-                        .WithMany()
-                        .HasForeignKey("CouponId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Cliente");
-
-                    b.Navigation("Coupon");
                 });
 
             modelBuilder.Entity("Fidelity.Shared.Models.ResponsabilePuntoVendita", b =>

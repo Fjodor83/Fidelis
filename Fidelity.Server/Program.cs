@@ -20,6 +20,12 @@ builder.Services.AddRazorPages();
 // Services Registration
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ICardGeneratorService, CardGeneratorService>();
+builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITransazioneService, TransazioneService>();
+builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // CORS Configuration
 builder.Services.AddCors(options =>

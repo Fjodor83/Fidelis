@@ -17,6 +17,8 @@ namespace Fidelity.Server.Data
         public DbSet<ResponsabilePuntoVendita> ResponsabilePuntiVendita { get; set; }
         public DbSet<TokenRegistrazione> TokenRegistrazione { get; set; }
         public DbSet<Transazione> Transazioni { get; set; }
+        public DbSet<Coupon> Coupons { get; set; }
+        public DbSet<CouponAssegnato> CouponAssegnati { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +43,10 @@ namespace Fidelity.Server.Data
 
             modelBuilder.Entity<TokenRegistrazione>()
                 .HasIndex(t => t.Token)
+                .IsUnique();
+
+            modelBuilder.Entity<Coupon>()
+                .HasIndex(c => c.Codice)
                 .IsUnique();
 
             // Relazioni

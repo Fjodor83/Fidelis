@@ -10,6 +10,7 @@ using Fidelity.Server.Data;
 using Fidelity.Server.Services;
 using Fidelity.Shared.DTOs;
 using Fidelity.Shared.Models;
+using AutoMapper;
 
 namespace Fidelity.Server.Controllers
 {
@@ -21,17 +22,20 @@ namespace Fidelity.Server.Controllers
         private readonly IEmailService _emailService;
         private readonly ICardGeneratorService _cardGenerator;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
 
         public RegistrazioneController(
             ApplicationDbContext context,
             IEmailService emailService,
             ICardGeneratorService cardGenerator,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMapper mapper)
         {
             _context = context;
             _emailService = emailService;
             _cardGenerator = cardGenerator;
             _configuration = configuration;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -242,11 +246,15 @@ namespace Fidelity.Server.Controllers
                     .Include(c => c.PuntoVenditaRegistrazione)
                     .FirstAsync(c => c.Id == nuovoCliente.Id);
 
-                // Genera card digitale
-                var cardDigitale = await _cardGenerator.GeneraCardDigitaleAsync(
-                    nuovoCliente,
-                    nuovoCliente.PuntoVenditaRegistrazione
-                );
+                // Genera card digitale (solo su Windows per System.Drawing)
+                byte[] cardDigitale = Array.Empty<byte>();
+                if (OperatingSystem.IsWindows())
+                {
+                    cardDigitale = await _cardGenerator.GeneraCardDigitaleAsync(
+                        nuovoCliente,
+                        nuovoCliente.PuntoVenditaRegistrazione
+                    );
+                }
 
                 // Invia email benvenuto con card
                 await _emailService.InviaEmailBenvenutoAsync(
@@ -260,18 +268,7 @@ namespace Fidelity.Server.Controllers
                 {
                     success = true,
                     messaggio = "Registrazione completata! Controlla la tua email per la card digitale.",
-                    cliente = new ClienteResponse
-                    {
-                        Id = nuovoCliente.Id,
-                        CodiceFidelity = nuovoCliente.CodiceFidelity,
-                        NomeCompleto = $"{nuovoCliente.Nome} {nuovoCliente.Cognome}",
-                        Email = nuovoCliente.Email,
-                        Telefono = nuovoCliente.Telefono,
-                        PuntiTotali = nuovoCliente.PuntiTotali,
-                        DataRegistrazione = nuovoCliente.DataRegistrazione,
-                        PuntoVenditaRegistrazione = nuovoCliente.PuntoVenditaRegistrazione.Nome,
-                        PuntoVenditaCodice = nuovoCliente.PuntoVenditaRegistrazione.Codice
-                    }
+                    cliente = _mapper.Map<ClienteResponse>(nuovoCliente)
                 });
             }
             catch (Exception)

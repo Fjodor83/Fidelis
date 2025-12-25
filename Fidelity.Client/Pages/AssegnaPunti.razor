@@ -1,0 +1,636 @@
+﻿@using Fidelity.Shared.DTOs
+@page "/assegna-punti"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Assegna Punti - Suns</PageTitle>
+
+<div class="min-vh-100" style="background-color: #f8f9fa;">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">☀️ Assegna Punti Fedeltà</span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-white">
+                    <i class="bi bi-person-circle"></i> @nomeCompleto
+                    @if (ruolo == "Admin")
+                    {
+                        <span class="badge bg-warning text-dark ms-2">ADMIN</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-info text-dark ms-2">@puntoVenditaCodice</span>
+                    }
+                </span>
+                <button class="btn btn-outline-light btn-sm" @onclick="TornaDashboard">
+                    <i class="bi bi-arrow-left"></i> Indietro
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <!-- Card Cerca Cliente -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="mb-0"><i class="bi bi-search me-2"></i>Cerca Cliente</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Codice Fedeltà</label>
+                                <input @bind="codiceFidelity" 
+                                       @bind:event="oninput"
+                                       @onkeypress="@(async e => { if (e.Key == "Enter") await CercaCliente(); })"
+                                       class="form-control form-control-lg" 
+                                       placeholder="SUN123456789"
+                                       maxlength="12" />
+                                <small class="text-muted">Inserisci il codice o scansiona il QR code della card</small>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary btn-lg w-100" @onclick="CercaCliente" disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-search me-2"></i>Cerca
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(messaggioErrore))
+                        {
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <i class="bi bi-exclamation-triangle"></i> @messaggioErrore
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (clienteTrovato != null)
+                {
+                    <!-- Card Info Cliente -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+                            <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Cliente Trovato</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-2">@clienteTrovato.Nome @clienteTrovato.Cognome</h4>
+                                    <p class="mb-1"><strong>Email:</strong> @clienteTrovato.Email</p>
+                                    <p class="mb-1"><strong>Telefono:</strong> @clienteTrovato.Telefono</p>
+                                    <p class="mb-0"><strong>Registrato:</strong> @clienteTrovato.DataRegistrazione.ToLocalTime().ToString("dd/MM/yyyy")</p>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.9rem;">
+                                            @clienteTrovato.CodiceFidelity
+                                        </span>
+                                    </div>
+                                    <h2 class="mb-0" style="color: #105a12ff;">
+                                        <i class="bi bi-star-fill me-2"></i>@clienteTrovato.PuntiTotali punti
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Navigation -->
+                    <ul class="nav nav-tabs mb-4">
+                        <li class="nav-item">
+                            <button class="nav-link @(activeTab == "punti" ? "active" : "")" 
+                                    @onclick='() => activeTab = "punti"'>
+                                <i class="bi bi-star me-2"></i>Gestione Punti
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link @(activeTab == "coupons" ? "active" : "")" 
+                                    @onclick='() => activeTab = "coupons"'>
+                                <i class="bi bi-ticket-perforated me-2"></i>Gestione Coupon
+                            </button>
+                        </li>
+                    </ul>
+
+                    @if (activeTab == "punti")
+                    {
+                        <!-- Card Assegna Punti -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Assegna Nuovi Punti</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Importo Spesa (€)</label>
+                                    <input @bind="importoSpesa" 
+                                           @bind:event="oninput"
+                                           type="number" 
+                                           step="0.01"
+                                           class="form-control form-control-lg" 
+                                           placeholder="0.00" />
+                                    <small class="text-muted">1 punto ogni 10€ spesi</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Punti da Assegnare</label>
+                                    <div class="input-group input-group-lg">
+                                        <input type="text" 
+                                               value="@puntiCalcolati" 
+                                               class="form-control" 
+                                               readonly 
+                                               style="background-color: #e9ecef; font-weight: bold; color: #105a12ff;" />
+                                        <span class="input-group-text">
+                                            <i class="bi bi-star-fill" style="color: #105a12ff;"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Note (opzionale)</label>
+                                <input @bind="noteTransazione" 
+                                       class="form-control" 
+                                       placeholder="Es: Acquisto scarpe sportive" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(messaggioSuccesso))
+                            {
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i> @messaggioSuccesso
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(messaggioErroreAssegnazione))
+                            {
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> @messaggioErroreAssegnazione
+                                </div>
+                            }
+
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success btn-lg" 
+                                        @onclick="AssegnaPuntiAsync"
+                                        disabled="@(isAssegnando || importoSpesa <= 0 || puntiCalcolati < 1)"
+                                        style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;">
+                                    @if (isAssegnando)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>Assegnazione in corso...</span>
+                                    }
+                                    else
+                                    {
+                                        <span><i class="bi bi-check-circle me-2"></i>Conferma e Assegna @puntiCalcolati Punti</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Storico Transazioni -->
+                    @if (clienteTrovato.UltimeTransazioni.Any())
+                    {
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Ultime Transazioni</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Punti</th>
+                                                <th>Importo</th>
+                                                <th>Negozio</th>
+                                                <th>Tipo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var t in clienteTrovato.UltimeTransazioni)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <small>@t.DataTransazione.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary">+@t.PuntiAssegnati</span>
+                                                    </td>
+                                                    <td>
+                                                        @if (t.ImportoSpesa.HasValue)
+                                                        {
+                                                            <span>@t.ImportoSpesa.Value.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <small>@t.PuntoVenditaNome</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-success">@t.TipoTransazione</span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    }
+                    @if (activeTab == "coupons")
+                    {
+                        <!-- Gestione Coupon -->
+                        <div class="row">
+                            <!-- Lista Coupon Cliente -->
+                            <div class="col-md-7 mb-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h5 class="mb-0"><i class="bi bi-person-video2 me-2"></i>Coupon del Cliente</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @if (couponsCliente.Any())
+                                        {
+                                            <div class="list-group list-group-flush">
+                                                @foreach (var c in couponsCliente)
+                                                {
+                                                    <div class="list-group-item p-3">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <h6 class="mb-1 text-primary fw-bold">@c.Titolo</h6>
+                                                                <p class="mb-1 small text-muted">@c.Descrizione</p>
+                                                                <div class="small">
+                                                                    <span class="badge bg-light text-dark border me-2">
+                                                                        @c.Codice
+                                                                    </span>
+                                                                    @if (c.TipoSconto == "Percentuale")
+                                                                    {
+                                                                        <span class="badge bg-info text-dark">@c.ValoreSconto.ToString("0")% OFF</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-success">@c.ValoreSconto.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("it-IT")) OFF</span>
+                                                                    }
+                                                                </div>
+                                                                @if (c.Utilizzato)
+                                                                {
+                                                                    <div class="mt-2 small text-muted">
+                                                                        <i class="bi bi-check-all"></i> Usato il @c.DataUtilizzo?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                                    </div>
+                                                                }
+                                                                else if (c.Scaduto)
+                                                                {
+                                                                    <div class="mt-2 small text-danger"><i class="bi bi-clock"></i> Scaduto</div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="mt-2 small text-success"><i class="bi bi-check-circle"></i> Valido fino al @c.DataScadenza.ToString("dd/MM/yyyy")</div>
+                                                                }
+                                                            </div>
+                                                            <div>
+                                                                @if (!c.Utilizzato && !c.Scaduto)
+                                                                {
+                                                                    <button class="btn btn-sm btn-outline-success" 
+                                                                            @onclick="() => RiscattaCoupon(c.Id)"
+                                                                            disabled="@isRiscattando">
+                                                                        Riscatta
+                                                                    </button>
+                                                                }
+                                                                else if (c.Utilizzato)
+                                                                {
+                                                                    <span class="badge bg-secondary">Usato</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-5 text-muted">
+                                                <i class="bi bi-ticket-perforated display-6 mb-3 d-block"></i>
+                                                Nessun coupon assegnato.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Assegna Nuovo Coupon -->
+                            <div class="col-md-5 mb-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h5 class="mb-0"><i class="bi bi-gift me-2"></i>Assegna Nuovo</h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Seleziona Coupon</label>
+                                            <select @bind="selectedCouponId" class="form-select form-select-lg">
+                                                <option value="0">-- Scegli un coupon --</option>
+                                                @foreach (var c in couponsDisponibili)
+                                                {
+                                                    <option value="@c.Id">@c.Titolo (@c.Codice)</option>
+                                                }
+                                            </select>
+                                        </div>
+
+                                        <button class="btn btn-primary w-100 btn-lg" 
+                                                @onclick="AssegnaCoupon"
+                                                disabled="@(selectedCouponId == 0 || isRiscattando)">
+                                            <i class="bi bi-plus-circle me-2"></i>Assegna al Cliente
+                                        </button>
+
+                                        @if (!string.IsNullOrEmpty(messaggioCoupon))
+                                        {
+                                            <div class="alert alert-success mt-3">@messaggioCoupon</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(erroreCoupon))
+                                        {
+                                            <div class="alert alert-danger mt-3">@erroreCoupon</div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string nomeCompleto = "";
+    private string puntoVenditaCodice = "";
+    private string authToken = "";
+    private string ruolo = "";
+
+    private string codiceFidelity = "";
+    private ClienteDettaglioResponse? clienteTrovato = null;
+
+    private decimal _importoSpesa = 0;
+    private decimal importoSpesa 
+    {
+        get => _importoSpesa;
+        set 
+        {
+            _importoSpesa = value;
+            puntiCalcolati = (int)(_importoSpesa * 0.1m); // 1 punto ogni 10€
+        }
+    }
+    private int puntiCalcolati = 0;
+    private string noteTransazione = "";
+
+    private bool isLoading = false;
+    private bool isAssegnando = false;
+    private string messaggioErrore = "";
+    private string messaggioErroreAssegnazione = "";
+    private string messaggioSuccesso = "";
+
+    // Coupon Logic
+    private string activeTab = "punti"; // "punti" or "coupons"
+    private List<CouponAssegnatoDTO> couponsCliente = new();
+    private List<CouponDTO> couponsDisponibili = new();
+    private int selectedCouponId = 0;
+    private bool isRiscattando = false;
+    private string messaggioCoupon = "";
+    private string erroreCoupon = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        nomeCompleto = await JS.InvokeAsync<string>("localStorage.getItem", "nomeCompleto");
+        authToken = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        ruolo = await JS.InvokeAsync<string>("localStorage.getItem", "ruolo");
+        puntoVenditaCodice = await JS.InvokeAsync<string>("localStorage.getItem", "puntoVenditaCodice");
+
+        if (string.IsNullOrEmpty(authToken))
+        {
+            Navigation.NavigateTo("/login-responsabile");
+            return;
+        }
+
+        Http.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+    }
+
+    private async Task CercaCliente()
+    {
+        if (string.IsNullOrWhiteSpace(codiceFidelity) || codiceFidelity.Length < 12)
+        {
+            messaggioErrore = "Inserisci un codice fedeltà valido (12 caratteri).";
+            return;
+        }
+
+        isLoading = true;
+        messaggioErrore = "";
+        clienteTrovato = null;
+
+        try
+        {
+            var response = await Http.GetAsync($"api/Transazioni/cliente/{codiceFidelity.Trim()}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                clienteTrovato = await response.Content.ReadFromJsonAsync<ClienteDettaglioResponse>();
+                await CaricaCouponsCliente();
+                await CaricaCouponsDisponibili();
+                messaggioErrore = "";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                messaggioErrore = $"Nessun cliente trovato con codice '{codiceFidelity}'.";
+            }
+            else
+            {
+                messaggioErrore = "Errore durante la ricerca del cliente.";
+            }
+        }
+        catch
+        {
+            messaggioErrore = "Errore di connessione.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+
+
+    private async Task AssegnaPuntiAsync()
+    {
+        if (clienteTrovato == null || importoSpesa <= 0 || puntiCalcolati < 1)
+        {
+            return;
+        }
+
+        isAssegnando = true;
+        messaggioErroreAssegnazione = "";
+        messaggioSuccesso = "";
+
+        try
+        {
+            var request = new AssegnaPuntiRequest
+            {
+                CodiceFidelity = clienteTrovato.CodiceFidelity,
+                ImportoSpesa = importoSpesa,
+                Note = noteTransazione
+            };
+
+            var response = await Http.PostAsJsonAsync("api/Transazioni/assegna-punti", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var transazione = await response.Content.ReadFromJsonAsync<TransazioneResponse>();
+                messaggioSuccesso = $"✓ Assegnati {transazione.PuntiAssegnati} punti con successo!";
+
+                // Aggiorna punti totali cliente
+                clienteTrovato.PuntiTotali += transazione.PuntiAssegnati;
+
+                // Aggiungi transazione allo storico
+                clienteTrovato.UltimeTransazioni.Insert(0, transazione);
+
+                // Reset form
+                importoSpesa = 0;
+                puntiCalcolati = 0;
+                noteTransazione = "";
+
+                // Nascondi messaggio dopo 5 secondi
+                await Task.Delay(5000);
+                messaggioSuccesso = "";
+            }
+            else
+            {
+                try
+                {
+                    var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                    messaggioErroreAssegnazione = error?["messaggio"] ?? "Errore durante l'assegnazione dei punti.";
+                }
+                catch
+                {
+                    messaggioErroreAssegnazione = "Errore durante l'assegnazione dei punti.";
+                }
+            }
+        }
+        catch
+        {
+            messaggioErroreAssegnazione = "Errore di connessione.";
+        }
+        finally
+        {
+            isAssegnando = false;
+        }
+    }
+
+    private async Task CaricaCouponsCliente()
+    {
+        if (clienteTrovato == null) return;
+        try
+        {
+            couponsCliente = await Http.GetFromJsonAsync<List<CouponAssegnatoDTO>>($"api/Coupons/cliente/{clienteTrovato.Id}") ?? new();
+        }
+        catch { }
+    }
+
+    private async Task CaricaCouponsDisponibili()
+    {
+        try
+        {
+            couponsDisponibili = await Http.GetFromJsonAsync<List<CouponDTO>>("api/Coupons/disponibili") ?? new();
+        }
+        catch { }
+    }
+
+    private async Task RiscattaCoupon(int couponAssegnatoId)
+    {
+        isRiscattando = true;
+        messaggioCoupon = "";
+        erroreCoupon = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Coupons/riscatta", new RiscattaCouponRequest { CouponAssegnatoId = couponAssegnatoId });
+            if (response.IsSuccessStatusCode)
+            {
+                messaggioCoupon = "Coupon riscattato con successo!";
+                await CaricaCouponsCliente();
+                await Task.Delay(3000);
+                messaggioCoupon = "";
+            }
+            else
+            {
+                erroreCoupon = "Errore durante il riscatto del coupon.";
+            }
+        }
+        catch
+        {
+            erroreCoupon = "Errore di connessione.";
+        }
+        finally
+        {
+            isRiscattando = false;
+        }
+    }
+
+    private async Task AssegnaCoupon()
+    {
+        if (selectedCouponId == 0) return;
+
+        isRiscattando = true;
+        messaggioCoupon = "";
+        erroreCoupon = "";
+
+        try
+        {
+            var request = new AssegnaCouponRequest 
+            { 
+                ClienteId = clienteTrovato!.Id,
+                CouponId = selectedCouponId
+            };
+
+            var response = await Http.PostAsJsonAsync("api/Coupons/assegna", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                messaggioCoupon = "Coupon assegnato con successo!";
+                await CaricaCouponsCliente();
+                selectedCouponId = 0;
+                await Task.Delay(3000);
+                messaggioCoupon = "";
+            }
+            else
+            {
+                var dict = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                erroreCoupon = dict?["messaggio"] ?? "Errore durante l'assegnazione.";
+            }
+        }
+        catch
+        {
+            erroreCoupon = "Errore di connessione.";
+        }
+        finally
+        {
+            isRiscattando = false;
+        }
+    }
+
+    private void TornaDashboard()
+    {
+        if (ruolo == "Admin")
+        {
+            Navigation.NavigateTo
+    ("/dashboard");
+        }
+        else
+        {
+            Navigation.NavigateTo("/dashboard-responsabile");
+        }
+    }
+}

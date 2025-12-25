@@ -4,6 +4,7 @@ using Fidelity.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fidelity.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251225015035_AddCoupons")]
+    partial class AddCoupons
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,25 +59,16 @@ namespace Fidelity.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PasswordResetToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("PasswordResetTokenExpiry")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("PrivacyAccettata")
                         .HasColumnType("bit");
 
                     b.Property<int>("PuntiTotali")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PuntoVenditaRegistrazioneId")
+                    b.Property<int>("PuntoVenditaRegistrazioneId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ResponsabileRegistrazioneId")
+                    b.Property<int>("ResponsabileRegistrazioneId")
                         .HasColumnType("int");
 
                     b.Property<string>("Telefono")
@@ -380,12 +374,14 @@ namespace Fidelity.Server.Migrations
                     b.HasOne("Fidelity.Shared.Models.PuntoVendita", "PuntoVenditaRegistrazione")
                         .WithMany("ClientiRegistrati")
                         .HasForeignKey("PuntoVenditaRegistrazioneId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Fidelity.Shared.Models.Responsabile", "ResponsabileRegistrazione")
                         .WithMany()
                         .HasForeignKey("ResponsabileRegistrazioneId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("PuntoVenditaRegistrazione");
 

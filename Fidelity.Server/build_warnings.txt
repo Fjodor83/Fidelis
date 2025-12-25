@@ -1,0 +1,12 @@
+  Individuazione dei progetti da ripristinare...
+  Tutti i progetti sono aggiornati per il ripristino.
+  Fidelity.Shared -> C:\Users\fjodo\Desktop\Fidelis\Fidelity.Shared\bin\Debug\net10.0\Fidelity.Shared.dll
+  Fidelity.Client -> C:\Users\fjodo\Desktop\Fidelis\Fidelity.Client\bin\Debug\net10.0\Fidelity.Client.dll
+  Fidelity.Client (Blazor output) -> C:\Users\fjodo\Desktop\Fidelis\Fidelity.Client\bin\Debug\net10.0\wwwroot
+  Fidelity.Server -> C:\Users\fjodo\Desktop\Fidelis\Fidelity.Server\bin\Debug\net10.0\Fidelity.Server.dll
+
+Compilazione completata.
+    Avvisi: 0
+    Errori: 0
+
+Tempo trascorso 00:00:11.58

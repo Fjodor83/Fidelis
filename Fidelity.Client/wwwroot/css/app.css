@@ -539,3 +539,108 @@ code {
     background: rgba(16, 90, 18, 0.1);
     color: #053e30;
 }
+
+/* ============================================
+   MOBILE RESPONSIVENESS HELPERS
+   ============================================ */
+
+/* 1. Horizontal Scrollable Tabs on Mobile */
+@media (max-width: 992px) {
+    .nav-tabs-scrollable {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px; /* Space for scrollbar */
+        border-bottom: none;
+    }
+    
+    .nav-tabs-scrollable::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .nav-tabs-scrollable::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 4px;
+    }
+    
+    .nav-tabs-scrollable .nav-link {
+        border: 1px solid transparent;
+        border-radius: 20px;
+        margin-right: 8px;
+        background-color: #f8f9fa;
+        color: #666;
+    }
+
+    .nav-tabs-scrollable .nav-link.active {
+        background-color: #105a12; /* Brand green */
+        color: white !important;
+    }
+}
+
+/* 2. Card View for Tables on Mobile */
+@media (max-width: 768px) {
+    .table-mobile-cards {
+        background: transparent !important;
+    }
+
+    .table-mobile-cards thead {
+        display: none;
+    }
+
+    .table-mobile-cards tbody, 
+    .table-mobile-cards tr, 
+    .table-mobile-cards td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-mobile-cards tr {
+        background: #fff;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 1rem;
+        border: 1px solid #eaeaea;
+    }
+
+    .table-mobile-cards td {
+        text-align: right;
+        padding: 0.5rem 0;
+        position: relative;
+        border-top: none;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 40px;
+    }
+
+    .table-mobile-cards td:last-child {
+        border-bottom: none;
+        padding-top: 1rem;
+        justify-content: flex-end;
+    }
+
+    .table-mobile-cards td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        margin-right: 1rem;
+    }
+
+    /* Adjust button groups in card view */
+    .table-mobile-cards td .btn-group {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    .table-mobile-cards td .btn-group .btn {
+        flex: 1;
+    }
+}

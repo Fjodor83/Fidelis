@@ -1,8 +1,7 @@
 ﻿@* Fidelity.Client/Pages/Dashboard.razor *@
 @page "/dashboard"
-@inject HttpClient Http
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
+@using Fidelity.Client.Pages.Admin.Components
+@using Fidelity.Client.Shared
 
 <PageTitle>Dashboard Admin - Suns</PageTitle>
 
@@ -11,6 +10,9 @@
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">☀️ Suns Admin Dashboard</span>
             <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light btn-sm" @onclick='() => Navigation.NavigateTo("/assegna-punti")'>
+                    <i class="bi bi-plus-circle me-1"></i>Assegna Punti
+                </button>
                 <span class="text-white">
                     <i class="bi bi-person-circle"></i> @nomeCompleto
                     <span class="badge bg-warning text-dark ms-2">ADMIN</span>
@@ -94,7 +96,7 @@
         <!-- Tabbed Navigation -->
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 pt-4 px-4">
-                <ul class="nav nav-tabs border-0" role="tablist">
+                <ul class="nav nav-tabs border-0 nav-tabs-scrollable" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link tab-green-1 @(activeTab == "overview" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "overview"' type="button">
                             <i class="bi bi-speedometer2 me-2"></i>Panoramica
@@ -115,11 +117,36 @@
                             <i class="bi bi-person-badge me-2"></i>Clienti
                         </button>
                     </li>
+                    
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-green-5 @(activeTab == "analytics" ? "active" : "") px-4 py-2" @onclick='() => activeTab = "analytics"' type="button">
+                            <i class="bi bi-graph-up-arrow me-2"></i>Analytics
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link tab-green-6 @(activeTab == "transactions" ? "active" : "") px-4 py-2" 
+                                @onclick='() => activeTab = "transactions"'>
+                            <i class="bi bi-receipt me-2"></i>Transazioni
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link tab-green-7 @(activeTab == "coupons" ? "active" : "") px-4 py-2" 
+                                @onclick='() => activeTab = "coupons"'>
+                            <i class="bi bi-ticket-perforated me-2"></i>Coupons
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body p-4">
                 <div class="tab-content" id="dashboardTabsContent">
                     
+                    <!-- Analytics Tab -->
+                    @if (activeTab == "analytics")
+                    {
+                         <AnalyticsTab />
+                    }
+
                     <!-- Overview Tab -->
                     @if (activeTab == "overview")
                     {
@@ -163,10 +190,10 @@
                             </button>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-mobile-cards">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Codice</th>
+                                        <th class="d-none d-md-table-cell">Codice</th>
                                         <th>Nome</th>
                                         <th>Città</th>
                                         <th>Indirizzo</th>
@@ -180,13 +207,13 @@
                                     @foreach (var negozio in puntiVendita)
                                     {
                                         <tr>
-                                            <td><code>@negozio.Codice</code></td>
-                                            <td>@negozio.Nome</td>
-                                            <td>@negozio.Citta</td>
-                                            <td>@negozio.Indirizzo</td>
-                                            <td>@negozio.Telefono</td>
-                                            <td><span class="badge bg-primary">@negozio.NumeroClienti</span></td>
-                                            <td>
+                                            <td data-label="Codice"><code>@negozio.Codice</code></td>
+                                            <td data-label="Nome">@negozio.Nome</td>
+                                            <td data-label="Città">@negozio.Citta</td>
+                                            <td data-label="Indirizzo">@negozio.Indirizzo</td>
+                                            <td data-label="Telefono">@negozio.Telefono</td>
+                                            <td data-label="Clienti"><span class="badge bg-primary">@negozio.NumeroClienti</span></td>
+                                            <td data-label="Stato">
                                                 @if (negozio.Attivo)
                                                 {
                                                     <span class="badge bg-success">Attivo</span>
@@ -196,7 +223,7 @@
                                                     <span class="badge bg-secondary">Non attivo</span>
                                                 }
                                             </td>
-                                            <td>
+                                            <td data-label="Azioni">
                                                 <div class="btn-group" role="group">
                                                     <button class="btn btn-outline-primary" @onclick="() => ApriModaleModifica(negozio)">
                                                         <i class="bi bi-pencil"></i> Modifica
@@ -222,7 +249,7 @@
                             </button>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-mobile-cards">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Username</th>
@@ -238,10 +265,10 @@
                                     @foreach (var responsabile in responsabili)
                                     {
                                         <tr>
-                                            <td><code>@responsabile.Username</code></td>
-                                            <td>@(string.IsNullOrWhiteSpace(responsabile.NomeCompleto) ? "(Da completare)" : responsabile.NomeCompleto)</td>
-                                            <td>@responsabile.Email</td>
-                                            <td>
+                                            <td data-label="Username"><code>@responsabile.Username</code></td>
+                                            <td data-label="Nome">@(string.IsNullOrWhiteSpace(responsabile.NomeCompleto) ? "(Da completare)" : responsabile.NomeCompleto)</td>
+                                            <td data-label="Email">@responsabile.Email</td>
+                                            <td data-label="Punti Vendita">
                                                 @if (responsabile.PuntiVendita.Any())
                                                 {
                                                     @foreach (var pv in responsabile.PuntiVendita)
@@ -254,7 +281,7 @@
                                                     <span class="text-muted">-</span>
                                                 }
                                             </td>
-                                            <td>
+                                            <td data-label="Ultimo Accesso">
                                                 @if (responsabile.UltimoAccesso.HasValue)
                                                 {
                                                     <small>@responsabile.UltimoAccesso.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
@@ -264,7 +291,7 @@
                                                     <small class="text-muted">Mai</small>
                                                 }
                                             </td>
-                                            <td>
+                                            <td data-label="Stato">
                                                 @if (responsabile.Attivo)
                                                 {
                                                     <span class="badge bg-success">Attivo</span>
@@ -274,7 +301,7 @@
                                                     <span class="badge bg-secondary">Non attivo</span>
                                                 }
                                             </td>
-                                            <td>
+                                            <td data-label="Azioni">
                                                 <div class="btn-group" role="group">
                                                     <button class="btn btn-outline-primary" @onclick="() => ApriModaleModificaResponsabile(responsabile)">
                                                         <i class="bi bi-pencil"></i> Modifica
@@ -311,7 +338,7 @@
                         @if (clientiTrovati.Any())
                         {
                             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                <table class="table table-hover">
+                                <table class="table table-hover table-mobile-cards">
                                     <thead class="table-light sticky-top">
                                         <tr>
                                             <th>Nome</th>
@@ -325,11 +352,11 @@
                                         @foreach (var cliente in clientiTrovati)
                                         {
                                             <tr>
-                                                <td><strong>@cliente.NomeCompleto</strong></td>
-                                                <td>@cliente.Email</td>
-                                                <td><code>@cliente.CodiceFidelity</code></td>
-                                                <td><span class="badge bg-primary">@cliente.PuntiTotali</span></td>
-                                                <td>@cliente.PuntoVenditaRegistrazione (@cliente.PuntoVenditaCodice)</td>
+                                                <td data-label="Nome"><strong>@cliente.NomeCompleto</strong></td>
+                                                <td data-label="Email">@cliente.Email</td>
+                                                <td data-label="Codice"><code>@cliente.CodiceFidelity</code></td>
+                                                <td data-label="Punti"><span class="badge bg-primary">@cliente.PuntiTotali</span></td>
+                                                <td data-label="Negozio">@cliente.PuntoVenditaRegistrazione (@cliente.PuntoVenditaCodice)</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -345,6 +372,159 @@
                         {
                             <p class="text-muted text-center mb-0">Inserisci almeno 3 caratteri per cercare un cliente</p>
                         }
+                    }
+
+                    @if (activeTab == "transactions")
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Storico Transazioni</h5>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="RubricaTransazioni">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle table-mobile-cards">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Cliente</th>
+                                        <th>Codice</th>
+                                        <th>Negozio</th>
+                                        <th>Operatore</th>
+                                        <th class="text-end">Importo</th>
+                                        <th class="text-center">Punti</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (transazioni.Any())
+                                    {
+                                        @foreach (var t in transazioni)
+                                        {
+                                            <tr>
+                                                <td data-label="Data">@t.DataTransazione.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td data-label="Cliente">@t.ClienteNome</td>
+                                                <td data-label="Codice"><code>@t.CodiceFidelity</code></td>
+                                                <td data-label="Negozio">@t.PuntoVenditaNome</td>
+                                                <td data-label="Operatore"><small class="text-muted">@t.ResponsabileNome</small></td>
+                                                <td class="text-end" data-label="Importo">
+                                                    @if (t.ImportoSpesa.HasValue)
+                                                    {
+                                                        <span>@(t.ImportoSpesa.Value.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("it-IT")))</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">-</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center" data-label="Punti">
+                                                    <span class="badge bg-success">+@t.PuntiAssegnati</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4 text-muted">
+                                                Nessuna transazione trovata.
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (activeTab == "coupons")
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Gestione Coupon</h5>
+                            <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;" @onclick="ApriModaleCreazioneCoupon">
+                                <i class="bi bi-plus-circle"></i> Nuovo Coupon
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle table-mobile-cards">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Codice</th>
+                                        <th>Titolo</th>
+                                        <th>Sconto</th>
+                                        <th>Validità</th>
+                                        <th>Stato</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (coupons.Any())
+                                    {
+                                        @foreach (var c in coupons)
+                                        {
+                                            <tr>
+                                                <td data-label="Codice"><code class="fs-5 fw-bold text-primary">@c.Codice</code></td>
+                                                <td data-label="Titolo">
+                                                    <strong>@c.Titolo</strong>
+                                                    <div class="small text-muted text-truncate" style="max-width: 200px;">@c.Descrizione</div>
+                                                </td>
+                                                <td data-label="Sconto">
+                                                    @if (c.TipoSconto == "Percentuale")
+                                                    {
+                                                        <span class="badge bg-info text-dark">@c.ValoreSconto.ToString("0")% OFF</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success">@c.ValoreSconto.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("it-IT")) OFF</span>
+                                                    }
+                                                </td>
+                                                <td data-label="Validità">
+                                                    <div class="small">Dal: @c.DataInizio.ToString("dd/MM/yyyy")</div>
+                                                    <div class="small @(c.DataScadenza < DateTime.UtcNow ? "text-danger" : "text-success")">
+                                                        Al: @c.DataScadenza.ToString("dd/MM/yyyy")
+                                                    </div>
+                                                </td>
+                                                <td data-label="Stato">
+                                                    @if (c.Attivo)
+                                                    {
+                                                        if (c.DataScadenza < DateTime.UtcNow)
+                                                        {
+                                                            <span class="badge bg-warning text-dark">Scaduto</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-success">Attivo</span>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Disattivato</span>
+                                                    }
+                                                </td>
+                                                <td data-label="Azioni">
+                                                    <div class="btn-group" role="group">
+                                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => ApriModaleModificaCoupon(c)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => ApriModaleEliminazioneCoupon(c)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted">
+                                                Nessun coupon presente.
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
 
                 </div>
@@ -578,415 +758,115 @@
     </div>
 }
 
-@code {
-    private string nomeCompleto = "";
-    private string authToken = "";
-    private string ruolo = "";
+<!-- Modal Crea/Modifica Coupon -->
+@if (mostraModaleCoupon)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+                    <h5 class="modal-title text-white">@(couponInModifica == null ? "Nuovo Coupon" : "Modifica Coupon")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleCoupon"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Codice Coupon</label>
+                        <input @bind="couponForm.Codice" class="form-control text-uppercase fw-bold" placeholder="ESTATE2024" maxlength="20" />
+                        <small class="text-muted">Il codice che il cliente dovrà utilizzare.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Titolo</label>
+                        <input @bind="couponForm.Titolo" class="form-control" placeholder="Sconto Estivo" maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrizione</label>
+                        <textarea @bind="couponForm.Descrizione" class="form-control" rows="2" placeholder="Valido su tutti i prodotti..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Tipo Sconto</label>
+                            <select @bind="couponForm.TipoSconto" class="form-select">
+                                <option value="Percentuale">Percentuale (%)</option>
+                                <option value="Fisso">Fisso (€)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Valore</label>
+                            <input @bind="couponForm.ValoreSconto" type="number" step="0.01" class="form-control" />
+                        </div>
+                    </div>
 
-    // Tab state
-    private string activeTab = "overview";
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data Inizio</label>
+                            <input @bind="couponForm.DataInizio" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data Scadenza</label>
+                            <input @bind="couponForm.DataScadenza" type="date" class="form-control" />
+                        </div>
+                    </div>
 
-    private bool isLoading = false;
-    private string ricercaCliente = "";
-    private List<ClienteResponse> clientiTrovati = new();
-    
-    private List<ClienteResponse> clienti = new();
-    private List<PuntoVenditaResponse> puntiVendita = new();
-    
-    private int totaleClienti = 0;
-    private int puntiTotali = 0;
-    private int mediaClientiPerNegozio = 0;
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" @bind="couponForm.Attivo" id="checkAttivoCoupon">
+                        <label class="form-check-label" for="checkAttivoCoupon">
+                            Attivo
+                        </label>
+                    </div>
 
-    // Store management
-    private bool mostraModaleNegozio = false;
-    private bool mostraModaleEliminazione = false;
-    private PuntoVenditaResponse? negozioInModifica = null;
-    private PuntoVenditaResponse? negozioInEliminazione = null;
-    private PuntoVenditaRequest negozioForm = new();
-    private string messaggioErroreNegozio = "";
-    private string messaggioErroreEliminazione = "";
-
-    // Manager management
-    private List<ResponsabileDetailResponse> responsabili = new();
-    private bool mostraModaleResponsabile = false;
-    private bool mostraModaleEliminazioneResponsabile = false;
-    private ResponsabileDetailResponse? responsabileInModifica = null;
-    private ResponsabileDetailResponse? responsabileInEliminazione = null;
-    private ResponsabileRequest responsabileForm = new();
-    private string messaggioErroreResponsabile = "";
-    private string messaggioErroreEliminazioneResponsabile = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        nomeCompleto = await JS.InvokeAsync<string>("localStorage.getItem", "nomeCompleto");
-        authToken = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
-        ruolo = await JS.InvokeAsync<string>("localStorage.getItem", "ruolo");
-
-        if (string.IsNullOrEmpty(authToken))
-        {
-            Navigation.NavigateTo("/login-responsabile");
-            return;
-        }
-
-        if (ruolo != "Admin")
-        {
-            Navigation.NavigateTo("/benvenuto-responsabile");
-            return;
-        }
-
-        Http.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
-
-        await CaricaDati();
-    }
-
-    private async Task CaricaDati()
-    {
-        isLoading = true;
-        try
-        {
-            // Carica punti vendita con statistiche
-            puntiVendita = await Http.GetFromJsonAsync<List<PuntoVenditaResponse>>("api/PuntiVendita") ?? new();
-            
-            // Carica tutti i clienti
-            clienti = await Http.GetFromJsonAsync<List<ClienteResponse>>("api/Clienti/mio-punto-vendita") ?? new();
-            
-            // Carica responsabili
-            responsabili = await Http.GetFromJsonAsync<List<ResponsabileDetailResponse>>("api/Responsabili") ?? new();
-            
-            totaleClienti = clienti.Count;
-            puntiTotali = clienti.Sum(c => c.PuntiTotali);
-            mediaClientiPerNegozio = puntiVendita.Count > 0 ? totaleClienti / puntiVendita.Count : 0;
-        }
-        catch { }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private async Task CercaCliente()
-    {
-        if (string.IsNullOrWhiteSpace(ricercaCliente) || ricercaCliente.Length < 3)
-        {
-            clientiTrovati = new();
-            return;
-        }
-
-        try
-        {
-            clientiTrovati = await Http.GetFromJsonAsync<List<ClienteResponse>>($"api/Clienti/cerca?query={ricercaCliente}") ?? new();
-        }
-        catch
-        {
-            clientiTrovati = new();
-        }
-    }
-
-    // Store CRUD operations
-    private void ApriModaleCreazione()
-    {
-        negozioInModifica = null;
-        negozioForm = new PuntoVenditaRequest { Attivo = true };
-        messaggioErroreNegozio = "";
-        mostraModaleNegozio = true;
-    }
-
-    private void ApriModaleModifica(PuntoVenditaResponse negozio)
-    {
-        negozioInModifica = negozio;
-        negozioForm = new PuntoVenditaRequest
-        {
-            Codice = negozio.Codice,
-            Nome = negozio.Nome,
-            Citta = negozio.Citta,
-            Indirizzo = negozio.Indirizzo,
-            Telefono = negozio.Telefono,
-            Attivo = negozio.Attivo
-        };
-        messaggioErroreNegozio = "";
-        mostraModaleNegozio = true;
-    }
-
-    private void ChiudiModaleNegozio()
-    {
-        mostraModaleNegozio = false;
-        negozioInModifica = null;
-        messaggioErroreNegozio = "";
-    }
-
-    private async Task SalvaNegozio()
-    {
-        isLoading = true;
-        messaggioErroreNegozio = "";
-
-        try
-        {
-            HttpResponseMessage response;
-            
-            if (negozioInModifica == null)
-            {
-                // Crea nuovo
-                response = await Http.PostAsJsonAsync("api/PuntiVendita", negozioForm);
-            }
-            else
-            {
-                // Aggiorna esistente
-                response = await Http.PutAsJsonAsync($"api/PuntiVendita/{negozioInModifica.Id}", negozioForm);
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                // Per evitare problemi con il parsing della risposta, ricarica semplicemente i dati
-                await Task.Delay(500); // Piccolo delay per assicurare che il DB sia aggiornato
-                await CaricaDati();
-                ChiudiModaleNegozio();
-            }
-            else
-            {
-                try
-                {
-                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                    messaggioErroreNegozio = errorObj?["messaggio"] ?? "Errore durante il salvataggio del negozio.";
-                }
-                catch
-                {
-                    messaggioErroreNegozio = "Errore durante il salvataggio del negozio.";
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            messaggioErroreNegozio = $"Errore di connessione: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private void ApriModaleEliminazione(PuntoVenditaResponse negozio)
-    {
-        negozioInEliminazione = negozio;
-        messaggioErroreEliminazione = "";
-        mostraModaleEliminazione = true;
-    }
-
-    private void ChiudiModaleEliminazione()
-    {
-        mostraModaleEliminazione = false;
-        negozioInEliminazione = null;
-        messaggioErroreEliminazione = "";
-    }
-
-    private async Task EliminaNegozio()
-    {
-        if (negozioInEliminazione == null) return;
-
-        isLoading = true;
-        messaggioErroreEliminazione = "";
-
-        try
-        {
-            var response = await Http.DeleteAsync($"api/PuntiVendita/{negozioInEliminazione.Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                await CaricaDati();
-                ChiudiModaleEliminazione();
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                messaggioErroreEliminazione = "Impossibile eliminare il negozio. Potrebbe avere clienti o responsabili associati.";
-            }
-        }
-        catch
-        {
-            messaggioErroreEliminazione = "Errore di connessione.";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    // Manager CRUD operations
-    private void ApriModaleCrezioneResponsabile()
-    {
-        responsabileInModifica = null;
-        responsabileForm = new ResponsabileRequest { Attivo = true, RichiestaResetPassword = true };
-        messaggioErroreResponsabile = "";
-        mostraModaleResponsabile = true;
-    }
-
-    private void ApriModaleModificaResponsabile(ResponsabileDetailResponse responsabile)
-    {
-        responsabileInModifica = responsabile;
-        responsabileForm = new ResponsabileRequest
-        {
-            Username = responsabile.Username,
-            NomeCompleto = responsabile.NomeCompleto,
-            Email = responsabile.Email,
-            PuntiVenditaIds = responsabile.PuntiVendita.Select(pv => pv.Id).ToList(),
-            RichiestaResetPassword = responsabile.RichiestaResetPassword,
-            Attivo = responsabile.Attivo
-        };
-        messaggioErroreResponsabile = "";
-        mostraModaleResponsabile = true;
-    }
-
-    private void ChiudiModaleResponsabile()
-    {
-        mostraModaleResponsabile = false;
-        responsabileInModifica = null;
-        messaggioErroreResponsabile = "";
-    }
-
-    private void TogglePuntoVendita(int pvId, bool isChecked)
-    {
-        if (isChecked)
-        {
-            if (!responsabileForm.PuntiVenditaIds.Contains(pvId))
-            {
-                responsabileForm.PuntiVenditaIds.Add(pvId);
-            }
-        }
-        else
-        {
-            responsabileForm.PuntiVenditaIds.Remove(pvId);
-        }
-    }
-
-    private async Task SalvaResponsabile()
-    {
-        isLoading = true;
-        messaggioErroreResponsabile = "";
-
-        try
-        {
-            // Validate form
-            if (string.IsNullOrWhiteSpace(responsabileForm.Username))
-            {
-                messaggioErroreResponsabile = "Username obbligatorio";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(responsabileForm.NomeCompleto))
-            {
-                messaggioErroreResponsabile = "Nome completo obbligatorio";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(responsabileForm.Email))
-            {
-                messaggioErroreResponsabile = "Email obbligatoria";
-                return;
-            }
-
-            if (!responsabileForm.PuntiVenditaIds.Any())
-            {
-                messaggioErroreResponsabile = "Seleziona almeno un punto vendita";
-                return;
-            }
-
-            HttpResponseMessage response;
-            if (responsabileInModifica == null)
-            {
-                // Create new
-                response = await Http.PostAsJsonAsync("api/Responsabili", responsabileForm);
-            }
-            else
-            {
-                // Update existing
-                response = await Http.PutAsJsonAsync($"api/Responsabili/{responsabileInModifica.Id}", responsabileForm);
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                await Task.Delay(500);
-                await CaricaDati();
-                ChiudiModaleResponsabile();
-            }
-            else
-            {
-                try
-                {
-                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                    messaggioErroreResponsabile = errorObj?["messaggio"] ?? "Errore durante la creazione del responsabile.";
-                }
-                catch
-                {
-                    messaggioErroreResponsabile = "Errore durante la creazione del responsabile.";
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            messaggioErroreResponsabile = $"Errore di connessione: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private void ApriModaleEliminazioneResponsabile(ResponsabileDetailResponse responsabile)
-    {
-        responsabileInEliminazione = responsabile;
-        messaggioErroreEliminazioneResponsabile = "";
-        mostraModaleEliminazioneResponsabile = true;
-    }
-
-    private void ChiudiModaleEliminazioneResponsabile()
-    {
-        mostraModaleEliminazioneResponsabile = false;
-        responsabileInEliminazione = null;
-        messaggioErroreEliminazioneResponsabile = "";
-    }
-
-    private async Task EliminaResponsabile()
-    {
-        if (responsabileInEliminazione == null) return;
-
-        isLoading = true;
-        messaggioErroreEliminazioneResponsabile = "";
-
-        try
-        {
-            var response = await Http.DeleteAsync($"api/Responsabili/{responsabileInEliminazione.Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                await CaricaDati();
-                ChiudiModaleEliminazioneResponsabile();
-            }
-            else
-            {
-                try
-                {
-                    var errorObj = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                    messaggioErroreEliminazioneResponsabile = errorObj?["messaggio"] ?? "Impossibile eliminare il responsabile.";
-                }
-                catch
-                {
-                    messaggioErroreEliminazioneResponsabile = "Impossibile eliminare il responsabile.";
-                }
-            }
-        }
-        catch
-        {
-            messaggioErroreEliminazioneResponsabile = "Errore di connessione.";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private async Task Logout()
-    {
-        await JS.InvokeVoidAsync("localStorage.clear");
-        Navigation.NavigateTo("/");
-    }
+                    @if (!string.IsNullOrEmpty(messaggioErroreCoupon))
+                    {
+                        <div class="alert alert-danger mt-3">@messaggioErroreCoupon</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ChiudiModaleCoupon">Annulla</button>
+                    <button class="btn btn-success" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border: none;"
+                            @onclick="SalvaCoupon" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Salva
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
+
+<!-- Modal Elimina Coupon -->
+@if (mostraModaleEliminazioneCoupon && couponInEliminazione != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Conferma Eliminazione</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleEliminazioneCoupon"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sei sicuro di voler eliminare il coupon <strong>@couponInEliminazione.Codice</strong>?</p>
+                    <p class="text-muted">Se il coupon è già stato utilizzato da dei clienti, verrà solo disattivato.</p>
+                    
+                    @if (!string.IsNullOrEmpty(messaggioErroreEliminazioneCoupon))
+                    {
+                        <div class="alert alert-danger">@messaggioErroreEliminazioneCoupon</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ChiudiModaleEliminazioneCoupon">Annulla</button>
+                    <button class="btn btn-danger" @onclick="EliminaCoupon" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Elimina
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+

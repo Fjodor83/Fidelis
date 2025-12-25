@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Fidelity.Server.Data;
 using Fidelity.Shared.DTOs;
 using Fidelity.Shared.Models;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace Fidelity.Server.Controllers
 {
@@ -14,10 +16,12 @@ namespace Fidelity.Server.Controllers
     public class ResponsabiliController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public ResponsabiliController(ApplicationDbContext context)
+        public ResponsabiliController(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -29,31 +33,12 @@ namespace Fidelity.Server.Controllers
             try
             {
                 var responsabili = await _context.Responsabili
-                    .Include(r => r.ResponsabilePuntiVendita)
-                        .ThenInclude(rp => rp.PuntoVendita)
                     .Where(r => r.Ruolo == "Responsabile")
                     .OrderBy(r => r.Username)
+                    .ProjectTo<ResponsabileDetailResponse>(_mapper.ConfigurationProvider)
                     .ToListAsync();
 
-                var response = responsabili.Select(r => new ResponsabileDetailResponse
-                {
-                    Id = r.Id,
-                    Username = r.Username,
-                    NomeCompleto = r.NomeCompleto,
-                    Email = r.Email,
-                    Ruolo = r.Ruolo,
-                    Attivo = r.Attivo,
-                    RichiestaResetPassword = r.RichiestaResetPassword,
-                    UltimoAccesso = r.UltimoAccesso,
-                    PuntiVendita = r.ResponsabilePuntiVendita.Select(rp => new PuntoVenditaBasicInfo
-                    {
-                        Id = rp.PuntoVendita.Id,
-                        Codice = rp.PuntoVendita.Codice,
-                        Nome = rp.PuntoVendita.Nome
-                    }).ToList()
-                }).ToList();
-
-                return Ok(response);
+                return Ok(responsabili);
             }
             catch (Exception ex)
             {
@@ -130,23 +115,7 @@ namespace Fidelity.Server.Controllers
                         .ThenInclude(rp => rp.PuntoVendita)
                     .FirstAsync(r => r.Id == responsabile.Id);
 
-                var response = new ResponsabileDetailResponse
-                {
-                    Id = created.Id,
-                    Username = created.Username,
-                    NomeCompleto = created.NomeCompleto,
-                    Email = created.Email,
-                    Ruolo = created.Ruolo,
-                    Attivo = created.Attivo,
-                    RichiestaResetPassword = created.RichiestaResetPassword,
-                    UltimoAccesso = created.UltimoAccesso,
-                    PuntiVendita = created.ResponsabilePuntiVendita.Select(rp => new PuntoVenditaBasicInfo
-                    {
-                        Id = rp.PuntoVendita.Id,
-                        Codice = rp.PuntoVendita.Codice,
-                        Nome = rp.PuntoVendita.Nome
-                    }).ToList()
-                };
+                var response = _mapper.Map<ResponsabileDetailResponse>(created);
 
                 return CreatedAtAction(nameof(GetAll), new { id = response.Id }, response);
             }
@@ -229,23 +198,7 @@ namespace Fidelity.Server.Controllers
                         .ThenInclude(rp => rp.PuntoVendita)
                     .FirstAsync(r => r.Id == id);
 
-                var response = new ResponsabileDetailResponse
-                {
-                    Id = updated.Id,
-                    Username = updated.Username,
-                    NomeCompleto = updated.NomeCompleto,
-                    Email = updated.Email,
-                    Ruolo = updated.Ruolo,
-                    Attivo = updated.Attivo,
-                    RichiestaResetPassword = updated.RichiestaResetPassword,
-                    UltimoAccesso = updated.UltimoAccesso,
-                    PuntiVendita = updated.ResponsabilePuntiVendita.Select(rp => new PuntoVenditaBasicInfo
-                    {
-                        Id = rp.PuntoVendita.Id,
-                        Codice = rp.PuntoVendita.Codice,
-                        Nome = rp.PuntoVendita.Nome
-                    }).ToList()
-                };
+                var response = _mapper.Map<ResponsabileDetailResponse>(updated);
 
                 return Ok(response);
             }

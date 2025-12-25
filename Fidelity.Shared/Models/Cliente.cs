@@ -25,13 +25,13 @@ namespace Fidelity.Shared.Models
 
         public DateTime DataRegistrazione { get; set; }
 
-        // Tracciamento punto vendita di origine - OBBLIGATORIO
-        public int PuntoVenditaRegistrazioneId { get; set; }
-        public PuntoVendita PuntoVenditaRegistrazione { get; set; }
+        // Tracciamento punto vendita di origine - Opzionale per registrazioni online
+        public int? PuntoVenditaRegistrazioneId { get; set; }
+        public PuntoVendita? PuntoVenditaRegistrazione { get; set; }
 
-        // Responsabile che ha effettuato la registrazione
-        public int ResponsabileRegistrazioneId { get; set; }
-        public Responsabile ResponsabileRegistrazione { get; set; }
+        // Responsabile che ha effettuato la registrazione - Opzionale per registrazioni online
+        public int? ResponsabileRegistrazioneId { get; set; }
+        public Responsabile? ResponsabileRegistrazione { get; set; }
 
         public int PuntiTotali { get; set; } = 0;
 
@@ -40,6 +40,13 @@ namespace Fidelity.Shared.Models
         public bool PrivacyAccettata { get; set; }
 
         // Link a transazioni
+        // Password
+        public string? PasswordHash { get; set; }
+        
+        // Reset password
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiry { get; set; }
+
         public ICollection<Transazione> Transazioni { get; set; }
     }
 }

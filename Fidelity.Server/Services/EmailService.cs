@@ -232,5 +232,157 @@ namespace Fidelity.Server.Services
                 return (false, ex.Message);
             }
         }
+        public async Task<(bool Success, string ErrorMessage)> InviaEmailPuntiGuadagnatiAsync(string email, string nome, int puntiGuadagnati, int nuovoSaldo, string nomePuntoVendita)
+        {
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Suns - Zero&Company", _configuration["Email:From"]));
+                message.To.Add(new MailboxAddress(nome, email));
+                message.Subject = $"🌟 Hai guadagnato {puntiGuadagnati} punti!";
+
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = $@"
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
+                            .container {{ max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }}
+                            .header {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 40px 20px; text-align: center; }}
+                            .header h1 {{ margin: 0; font-size: 28px; }}
+                            .content {{ padding: 40px 30px; }}
+                            .points-box {{ background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0; }}
+                            .points {{ font-size: 32px; font-weight: bold; color: #105a12ff; }}
+                            .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 14px; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='container'>
+                            <div class='header'>
+                                <h1>☀️ Nuovi Punti per te!</h1>
+                            </div>
+                            <div class='content'>
+                                <h2>Ciao {nome}! 👋</h2>
+                                <p>Grazie per il tuo acquisto presso <strong>{nomePuntoVendita}</strong>.</p>
+                                
+                                <div class='points-box'>
+                                    <p style='margin: 0;'>Hai guadagnato:</p>
+                                    <div class='points'>+{puntiGuadagnati} Punti</div>
+                                </div>
+
+                                <p style='text-align: center; font-size: 18px;'>
+                                    Il tuo nuovo saldo totale è:<br>
+                                    <strong>{nuovoSaldo} Punti</strong>
+                                </p>
+
+                                <p>Continua così per sbloccare premi esclusivi!</p>
+                            </div>
+                            <div class='footer'>
+                                <p>© 2024 Suns - Zero&Company. Tutti i diritti riservati.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>"
+                };
+
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
+                await client.ConnectAsync(
+                    _configuration["Email:SmtpServer"],
+                    int.Parse(_configuration["Email:SmtpPort"]),
+                    SecureSocketOptions.StartTls
+                );
+                await client.AuthenticateAsync(
+                    _configuration["Email:Username"],
+                    _configuration["Email:Password"]
+                );
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                return (true, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore invio email punti: {ex.Message}");
+                return (false, ex.Message);
+            }
+        }
+
+        public async Task<(bool Success, string ErrorMessage)> InviaEmailNuovoCouponAsync(string email, string nome, string titoloCoupon, string codiceCoupon, DateTime dataScadenza)
+        {
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Suns - Zero&Company", _configuration["Email:From"]));
+                message.To.Add(new MailboxAddress(nome, email));
+                message.Subject = $"🎁 Hai ricevuto un nuovo Coupon: {titoloCoupon}";
+
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = $@"
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
+                            .container {{ max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }}
+                            .header {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 40px 20px; text-align: center; }}
+                            .content {{ padding: 40px 30px; }}
+                            .coupon-box {{ border: 2px dashed #105a12ff; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0; background-color: #f8fff9; }}
+                            .coupon-code {{ font-size: 28px; font-weight: bold; color: #105a12ff; letter-spacing: 2px; margin: 10px 0; }}
+                            .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 14px; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='container'>
+                            <div class='header'>
+                                <h1>☀️ Un regalo per te!</h1>
+                            </div>
+                            <div class='content'>
+                                <h2>Ciao {nome}! 👋</h2>
+                                <p>Abbiamo pensato a te con questo coupon speciale:</p>
+                                
+                                <div class='coupon-box'>
+                                    <h3 style='margin: 0; color: #333;'>{titoloCoupon}</h3>
+                                    <div class='coupon-code'>{codiceCoupon}</div>
+                                    <p style='margin: 0; font-size: 14px; color: #666;'>Scade il: {dataScadenza:dd/MM/yyyy}</p>
+                                </div>
+
+                                <p>Mostra questo codice in cassa per utilizzare il tuo sconto.</p>
+                            </div>
+                            <div class='footer'>
+                                <p>© 2024 Suns - Zero&Company. Tutti i diritti riservati.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>"
+                };
+
+                message.Body = bodyBuilder.ToMessageBody();
+
+                using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
+                await client.ConnectAsync(
+                    _configuration["Email:SmtpServer"],
+                    int.Parse(_configuration["Email:SmtpPort"]),
+                    SecureSocketOptions.StartTls
+                );
+                await client.AuthenticateAsync(
+                    _configuration["Email:Username"],
+                    _configuration["Email:Password"]
+                );
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                return (true, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore invio email coupon: {ex.Message}");
+                return (false, ex.Message);
+            }
+        }
     }
 }

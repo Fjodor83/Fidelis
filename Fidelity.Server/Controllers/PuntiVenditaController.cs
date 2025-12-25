@@ -7,6 +7,8 @@ using Fidelity.Shared.DTOs;
 using Fidelity.Shared.Models;
 using System.Security.Claims;
 using BCrypt.Net;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace Fidelity.Server.Controllers
 {
@@ -16,10 +18,12 @@ namespace Fidelity.Server.Controllers
     public class PuntiVenditaController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public PuntiVenditaController(ApplicationDbContext context)
+        public PuntiVenditaController(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -31,19 +35,8 @@ namespace Fidelity.Server.Controllers
             try
             {
                 var puntiVendita = await _context.PuntiVendita
-                    .Select(pv => new PuntoVenditaResponse
-                    {
-                        Id = pv.Id,
-                        Codice = pv.Codice,
-                        Nome = pv.Nome,
-                        Citta = pv.Citta,
-                        Indirizzo = pv.Indirizzo,
-                        Telefono = pv.Telefono,
-                        Attivo = pv.Attivo,
-                        NumeroClienti = pv.ClientiRegistrati.Count(c => c.Attivo),
-                        DataCreazione = pv.DataCreazione
-                    })
                     .OrderBy(pv => pv.Codice)
+                    .ProjectTo<PuntoVenditaResponse>(_mapper.ConfigurationProvider)
                     .ToListAsync();
 
                 return Ok(puntiVendita);
@@ -64,18 +57,7 @@ namespace Fidelity.Server.Controllers
             {
                 var puntoVendita = await _context.PuntiVendita
                     .Where(pv => pv.Id == id)
-                    .Select(pv => new PuntoVenditaResponse
-                    {
-                        Id = pv.Id,
-                        Codice = pv.Codice,
-                        Nome = pv.Nome,
-                        Citta = pv.Citta,
-                        Indirizzo = pv.Indirizzo,
-                        Telefono = pv.Telefono,
-                        Attivo = pv.Attivo,
-                        NumeroClienti = pv.ClientiRegistrati.Count(c => c.Attivo),
-                        DataCreazione = pv.DataCreazione
-                    })
+                    .ProjectTo<PuntoVenditaResponse>(_mapper.ConfigurationProvider)
                     .FirstOrDefaultAsync();
 
                 if (puntoVendita == null)

@@ -1,0 +1,141 @@
+@page "/profilo"
+@layout CustomerLayout
+@using Fidelity.Shared.DTOs
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Dashboard - Fidelis Customer</PageTitle>
+
+<div class="container py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold mb-0">Ciao, @nome! 👋</h2>
+            <p class="text-muted">Bentornato nella tua area personale.</p>
+        </div>
+        <div class="col-auto">
+            <div class="badge bg-warning text-dark fs-6 px-3 py-2 shadow-sm">
+                <i class="bi bi-star-fill me-1"></i> @punti punti
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Fidelity Card Digitale -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-lg text-white h-100" 
+                 style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); border-radius: 15px;">
+                <div class="card-body p-4 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="bi bi-sun-fill display-1"></i>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="text-uppercase mb-0 ls-1">Fidelity Card</h5>
+                            <small class="text-white-50">Suns</small>
+                        </div>
+                        <i class="bi bi-wifi fs-3"></i>
+                    </div>
+
+                    <div class="text-center py-3">
+                        <div class="bg-white p-2 d-inline-block rounded">
+                            <!-- Qui andrebbe il QR Code reale, usiamo un placeholder per ora -->
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=@codiceFidelity" 
+                                 alt="QR Code" width="120" height="120">
+                        </div>
+                        <div class="mt-3 font-monospace fs-4">@FormatCode(codiceFidelity)</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end mt-4">
+                        <div>
+                            <small class="text-white-50 d-block text-uppercase" style="font-size: 0.7rem;">Titolare</small>
+                            <span class="fw-bold">@nomeCompleto</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stato Punti e Coupon -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">Il tuo stato</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-light rounded-circle p-3 me-3 text-warning">
+                            <i class="bi bi-star-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0 fw-bold">@punti</h3>
+                            <span class="text-muted">Punti accumulati</span>
+                        </div>
+                    </div>
+
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(CalculateProgress(punti))%" 
+                             aria-valuenow="@punti" aria-valuemin="0" aria-valuemax="1000"></div>
+                    </div>
+                    <small class="text-muted d-block mb-4">Mancano @(1000 - punti) punti al prossimo livello!</small>
+
+                    <div class="d-grid">
+                         <a href="/miei-coupon" class="btn btn-customer w-100 shadow-sm">
+                            <i class="bi bi-ticket-perforated me-2"></i>Visualizza i tuoi Coupon
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string nome = "Cliente";
+    private string nomeCompleto = "Cliente Fidelis";
+    private string codiceFidelity = "SUN000000000";
+    private int punti = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login-cliente");
+            return;
+        }
+
+        nomeCompleto = await JS.InvokeAsync<string>("localStorage.getItem", "nomeCompleto") ?? "Cliente";
+        nome = nomeCompleto.Split(' ')[0];
+        codiceFidelity = await JS.InvokeAsync<string>("localStorage.getItem", "codiceFidelity") ?? "SUN000000000";
+        // TODO: In a real app we would fetch fresh data from API here
+        // For now relying on what we stored during login + generic placeholder
+    }
+
+    private string FormatCode(string code)
+    {
+        if (string.IsNullOrEmpty(code)) return "";
+        // Adds spaces for readability: SUN 123 456 789
+        return code; 
+    }
+
+    private int CalculateProgress(int points)
+    {
+        // Example logic: target is 1000 points
+        if (points >= 1000) return 100;
+        return (int)((points / 1000.0) * 100);
+    }
+}
+
+<style>
+    .btn-customer {
+        background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);
+        color: white;
+        border: none;
+    }
+    .btn-customer:hover {
+        background: linear-gradient(135deg, #52ab47 0%, #2d8a27 100%);
+        color: white;
+    }
+</style>
