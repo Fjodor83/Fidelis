@@ -4,8 +4,9 @@ namespace Fidelity.Shared.DTOs
     public class LoginResponse
     {
         public bool Success { get; set; }
-        public string Token { get; set; }
-        public int ResponsabileId { get; set; }
+        public string? Token { get; set; }
+        public string? RefreshToken { get; set; }
+        public int? ResponsabileId { get; set; }
         public string Username { get; set; }
         public string NomeCompleto { get; set; }
         public string Ruolo { get; set; }

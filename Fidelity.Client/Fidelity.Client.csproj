@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fidelity.Shared\Fidelity.Shared.csproj" />
+    <ProjectReference Include="..\src\Core\Fidelity.Application\Fidelity.Application.csproj" />
   </ItemGroup>
 
 </Project>

@@ -16,9 +16,11 @@ namespace Fidelity.Shared.DTOs
         public bool Success { get; set; }
         public string Messaggio { get; set; }
         public string Token { get; set; }
+        public string? RefreshToken { get; set; }
         public int ClienteId { get; set; }
         public string Nome { get; set; }
         public string Cognome { get; set; }
+        public string? Email { get; set; }
         public string CodiceFidelity { get; set; }
         public int PuntiTotali { get; set; }
     }

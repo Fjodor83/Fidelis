@@ -21,11 +21,11 @@ namespace Fidelity.Shared.DTOs
 
     public class RecentActivityDTO
     {
-        public int Id { get; set; }
-        public DateTime Data { get; set; }
         public string Tipo { get; set; } // "Punti" o "Coupon"
+        public string ClienteNome { get; set; }
         public string Descrizione { get; set; }
-        public string NomeCliente { get; set; }
-        public string NomePuntoVendita { get; set; }
+        public DateTime Data { get; set; }
+        public string PuntoVendita { get; set; }
+        public string Responsabile { get; set; }
     }
 }

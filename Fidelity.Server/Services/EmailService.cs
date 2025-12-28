@@ -3,10 +3,14 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Fidelity.Shared.DTOs;
 using MailKit.Net.Smtp;
-using MailKit.Security;
-using MailKit;
 using MimeKit;
+using Fidelity.Shared.Models;
+using Microsoft.EntityFrameworkCore;
+using Fidelity.Server.Data;
+using MailKit.Security;
+using MailKit;  // <-- AGGIUNTO: per ProtocolLogger
 
 namespace Fidelity.Server.Services
 {
@@ -104,14 +108,14 @@ namespace Fidelity.Server.Services
                 using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
                 
                 await client.ConnectAsync(
-                    _configuration["Email:SmtpServer"],
-                    int.Parse(_configuration["Email:SmtpPort"]),
+                    _configuration["Email:SmtpServer"] ?? "smtp.gmail.com",
+                    int.Parse(_configuration["Email:SmtpPort"] ?? "587"),
                     SecureSocketOptions.StartTls
                 );
 
                 await client.AuthenticateAsync(
-                    _configuration["Email:Username"],
-                    _configuration["Email:Password"]
+                    _configuration["Email:Username"] ?? "",
+                    _configuration["Email:Password"] ?? ""
                 );
 
                 await client.SendAsync(message);
@@ -210,14 +214,14 @@ namespace Fidelity.Server.Services
                 using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
                 
                 await client.ConnectAsync(
-                    _configuration["Email:SmtpServer"],
-                    int.Parse(_configuration["Email:SmtpPort"]),
+                    _configuration["Email:SmtpServer"] ?? "smtp.gmail.com",
+                    int.Parse(_configuration["Email:SmtpPort"] ?? "587"),
                     SecureSocketOptions.StartTls
                 );
 
                 await client.AuthenticateAsync(
-                    _configuration["Email:Username"],
-                    _configuration["Email:Password"]
+                    _configuration["Email:Username"] ?? "",
+                    _configuration["Email:Password"] ?? ""
                 );
 
                 await client.SendAsync(message);
@@ -232,6 +236,7 @@ namespace Fidelity.Server.Services
                 return (false, ex.Message);
             }
         }
+
         public async Task<(bool Success, string ErrorMessage)> InviaEmailPuntiGuadagnatiAsync(string email, string nome, int puntiGuadagnati, int nuovoSaldo, string nomePuntoVendita)
         {
             try
@@ -291,13 +296,13 @@ namespace Fidelity.Server.Services
 
                 using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
                 await client.ConnectAsync(
-                    _configuration["Email:SmtpServer"],
-                    int.Parse(_configuration["Email:SmtpPort"]),
+                    _configuration["Email:SmtpServer"] ?? "smtp.gmail.com",
+                    int.Parse(_configuration["Email:SmtpPort"] ?? "587"),
                     SecureSocketOptions.StartTls
                 );
                 await client.AuthenticateAsync(
-                    _configuration["Email:Username"],
-                    _configuration["Email:Password"]
+                    _configuration["Email:Username"] ?? "",
+                    _configuration["Email:Password"] ?? ""
                 );
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
@@ -318,7 +323,7 @@ namespace Fidelity.Server.Services
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Suns - Zero&Company", _configuration["Email:From"]));
                 message.To.Add(new MailboxAddress(nome, email));
-                message.Subject = $"🎁 Hai ricevuto un nuovo Coupon: {titoloCoupon}";
+                message.Subject = "🎁 Nuovo Coupon Disponibile!";
 
                 var bodyBuilder = new BodyBuilder
                 {
@@ -330,57 +335,77 @@ namespace Fidelity.Server.Services
                             body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
                             .container {{ max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }}
                             .header {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 40px 20px; text-align: center; }}
+                            .header h1 {{ margin: 0; font-size: 32px; }}
+                            .header .emoji {{ font-size: 64px; }}
                             .content {{ padding: 40px 30px; }}
-                            .coupon-box {{ border: 2px dashed #105a12ff; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0; background-color: #f8fff9; }}
-                            .coupon-code {{ font-size: 28px; font-weight: bold; color: #105a12ff; letter-spacing: 2px; margin: 10px 0; }}
+                            .content h2 {{ color: #105a12ff; margin-top: 0; }}
+                            .content p {{ color: #666; line-height: 1.6; font-size: 16px; }}
+                            .coupon-box {{ background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0; box-shadow: 0 4px 15px rgba(16, 90, 18, 0.3); }}
+                            .coupon-code {{ font-size: 36px; font-weight: bold; letter-spacing: 4px; border: 3px dashed white; padding: 20px; border-radius: 10px; margin: 20px 0; }}
+                            .validity {{ background-color: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px; margin-top: 15px; }}
                             .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 14px; }}
+                            .highlight {{ color: #105a12ff; font-weight: bold; }}
                         </style>
                     </head>
                     <body>
                         <div class='container'>
                             <div class='header'>
-                                <h1>☀️ Un regalo per te!</h1>
+                                <div class='emoji'>🎁</div>
+                                <h1>Nuovo Coupon!</h1>
                             </div>
                             <div class='content'>
-                                <h2>Ciao {nome}! 👋</h2>
-                                <p>Abbiamo pensato a te con questo coupon speciale:</p>
+                                <h2>Ciao {nome}! 🌟</h2>
+                                <p>Abbiamo una sorpresa speciale per te! È disponibile un <strong>nuovo coupon</strong> che puoi utilizzare subito.</p>
                                 
                                 <div class='coupon-box'>
-                                    <h3 style='margin: 0; color: #333;'>{titoloCoupon}</h3>
+                                    <h3 style='margin:0;font-size:24px;'>{titoloCoupon}</h3>
                                     <div class='coupon-code'>{codiceCoupon}</div>
-                                    <p style='margin: 0; font-size: 14px; color: #666;'>Scade il: {dataScadenza:dd/MM/yyyy}</p>
+                                    <div class='validity'>
+                                        ⏰ Valido fino al {dataScadenza:dd/MM/yyyy}
+                                    </div>
                                 </div>
 
-                                <p>Mostra questo codice in cassa per utilizzare il tuo sconto.</p>
+                                <p><strong>Come utilizzarlo:</strong></p>
+                                <ol style='color:#666;line-height:1.8;'>
+                                    <li>Accedi al tuo account Suns Fidelity</li>
+                                    <li>Vai alla sezione ""I Miei Coupon""</li>
+                                    <li>Troverai il coupon pronto da utilizzare</li>
+                                    <li>Mostra il codice in negozio per ottenere il tuo sconto!</li>
+                                </ol>
+
+                                <p style='margin-top:30px;'>Non perdere questa occasione! Il coupon è già stato aggiunto automaticamente al tuo account.</p>
                             </div>
                             <div class='footer'>
-                                <p>© 2024 Suns - Zero&Company. Tutti i diritti riservati.</p>
+                                <p>Questo è un messaggio automatico dalla tua Suns Fidelity Card.</p>
+                                <p style='margin-top:10px;'>© 2025 Suns - Zero&Company. Tutti i diritti riservati.</p>
                             </div>
                         </div>
                     </body>
-                    </html>"
+                    </html>
+                    "
                 };
 
                 message.Body = bodyBuilder.ToMessageBody();
 
-                using var client = new SmtpClient(new ProtocolLogger(Console.OpenStandardOutput()));
-                await client.ConnectAsync(
-                    _configuration["Email:SmtpServer"],
-                    int.Parse(_configuration["Email:SmtpPort"]),
-                    SecureSocketOptions.StartTls
-                );
-                await client.AuthenticateAsync(
-                    _configuration["Email:Username"],
-                    _configuration["Email:Password"]
-                );
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
+                using (var client = new SmtpClient())
+                {
+                    await client.ConnectAsync(
+                        _configuration["Email:SmtpServer"] ?? "smtp.gmail.com",
+                        int.Parse(_configuration["Email:SmtpPort"] ?? "587"),
+                        SecureSocketOptions.StartTls
+                    );
+                    await client.AuthenticateAsync(
+                        _configuration["Email:Username"] ?? "",
+                        _configuration["Email:Password"] ?? ""
+                    );
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                }
 
                 return (true, string.Empty);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore invio email coupon: {ex.Message}");
                 return (false, ex.Message);
             }
         }

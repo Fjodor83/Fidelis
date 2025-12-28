@@ -30,6 +30,9 @@ namespace Fidelity.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AccountLockedUntil")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("Attivo")
                         .HasColumnType("bit");
 
@@ -50,6 +53,9 @@ namespace Fidelity.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("int");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -220,6 +226,52 @@ namespace Fidelity.Server.Migrations
                     b.ToTable("PuntiVendita");
                 });
 
+            modelBuilder.Entity("Fidelity.Shared.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ClienteId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JwtId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ResponsabileId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ResponsabileId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Fidelity.Shared.Models.Responsabile", b =>
                 {
                     b.Property<int>("Id")
@@ -228,12 +280,18 @@ namespace Fidelity.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AccountLockedUntil")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("Attivo")
                         .HasColumnType("bit");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("int");
 
                     b.Property<string>("NomeCompleto")
                         .IsRequired()
@@ -409,6 +467,23 @@ namespace Fidelity.Server.Migrations
                     b.Navigation("Cliente");
 
                     b.Navigation("Coupon");
+                });
+
+            modelBuilder.Entity("Fidelity.Shared.Models.RefreshToken", b =>
+                {
+                    b.HasOne("Fidelity.Shared.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Fidelity.Shared.Models.Responsabile", "Responsabile")
+                        .WithMany()
+                        .HasForeignKey("ResponsabileId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Responsabile");
                 });
 
             modelBuilder.Entity("Fidelity.Shared.Models.ResponsabilePuntoVendita", b =>

@@ -43,8 +43,9 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.DataTransazione))
                 .ForMember(dest => dest.Tipo, opt => opt.MapFrom(src => "Punti"))
                 .ForMember(dest => dest.Descrizione, opt => opt.MapFrom(src => $"{src.PuntiAssegnati} punti"))
-                .ForMember(dest => dest.NomeCliente, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
-                .ForMember(dest => dest.NomePuntoVendita, opt => opt.MapFrom(src => src.PuntoVendita.Nome));
+                .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
+                .ForMember(dest => dest.PuntoVendita, opt => opt.MapFrom(src => src.PuntoVendita.Nome))
+                .ForMember(dest => dest.Responsabile, opt => opt.MapFrom(src => src.Responsabile != null ? src.Responsabile.Username : "Sistema"));
 
 
             // CouponAssegnato -> RecentActivityDTO
@@ -52,8 +53,9 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.DataUtilizzo))
                 .ForMember(dest => dest.Tipo, opt => opt.MapFrom(src => "Coupon"))
                 .ForMember(dest => dest.Descrizione, opt => opt.MapFrom(src => $"Riscattato {src.Coupon.Codice}"))
-                .ForMember(dest => dest.NomeCliente, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
-                .ForMember(dest => dest.NomePuntoVendita, opt => opt.MapFrom(src => "N/A"));
+                .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
+                .ForMember(dest => dest.PuntoVendita, opt => opt.MapFrom(src => "N/A"))
+                .ForMember(dest => dest.Responsabile, opt => opt.MapFrom(src => "N/A"));
 
             // PuntoVendita -> PuntoVenditaResponse
             CreateMap<PuntoVendita, PuntoVenditaResponse>()

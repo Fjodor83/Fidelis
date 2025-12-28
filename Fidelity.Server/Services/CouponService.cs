@@ -69,6 +69,41 @@ namespace Fidelity.Server.Services
             _context.Coupons.Add(coupon);
             await _context.SaveChangesAsync();
 
+            // Notifica tutti i clienti attivi via email
+            if (coupon.Attivo)
+            {
+                try
+                {
+                    var clientiAttivi = await _context.Clienti
+                        .Where(c => c.Attivo && !string.IsNullOrEmpty(c.Email))
+                        .ToListAsync();
+
+                    foreach (var cliente in clientiAttivi)
+                    {
+                        try
+                        {
+                            await _emailService.InviaEmailNuovoCouponAsync(
+                                cliente.Email,
+                                cliente.Nome,
+                                coupon.Titolo,
+                                coupon.Codice,
+                                coupon.DataScadenza
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log error but continue sending to other customers
+                            Console.WriteLine($"Errore invio email a {cliente.Email}: {ex.Message}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Non bloccare la creazione del coupon se le email falliscono
+                    Console.WriteLine($"Errore generale nell'invio delle email: {ex.Message}");
+                }
+            }
+
             return _mapper.Map<CouponDTO>(coupon);
         }
 

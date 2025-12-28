@@ -85,11 +85,19 @@ namespace Fidelity.Server.Services
             var ultimiPunti = await _context.Transazioni
                 .Include(m => m.Cliente)
                 .Include(m => m.PuntoVendita)
+                .Include(m => m.Responsabile)
                 .OrderByDescending(m => m.DataTransazione)
                 .Take(10)
+                .Select(m => new RecentActivityDTO
+                {
+                    Tipo = "Punti",
+                    ClienteNome = m.Cliente.Nome + " " + m.Cliente.Cognome,
+                    Descrizione = $"+{m.PuntiAssegnati} punti",
+                    Data = m.DataTransazione,
+                    PuntoVendita = m.PuntoVendita != null ? m.PuntoVendita.Nome : "N/A",
+                    Responsabile = m.Responsabile != null ? m.Responsabile.Username : "Sistema"
+                })
                 .ToListAsync();
-
-            var ultimiPuntiDTO = _mapper.Map<List<RecentActivityDTO>>(ultimiPunti);
 
             var ultimiCoupon = await _context.CouponAssegnati
                 .Include(ca => ca.Cliente)
@@ -97,11 +105,18 @@ namespace Fidelity.Server.Services
                 .Where(ca => ca.Utilizzato && ca.DataUtilizzo.HasValue)
                 .OrderByDescending(ca => ca.DataUtilizzo)
                 .Take(10)
+                .Select(ca => new RecentActivityDTO
+                {
+                    Tipo = "Coupon",
+                    ClienteNome = ca.Cliente.Nome + " " + ca.Cliente.Cognome,
+                    Descrizione = $"Coupon: {ca.Coupon.Titolo}",
+                    Data = ca.DataUtilizzo!.Value,
+                    PuntoVendita = "N/A",
+                    Responsabile = "N/A"
+                })
                 .ToListAsync();
 
-            var ultimiCouponDTO = _mapper.Map<List<RecentActivityDTO>>(ultimiCoupon);
-
-            var activity = ultimiPuntiDTO.Concat(ultimiCouponDTO)
+            var activity = ultimiPunti.Concat(ultimiCoupon)
                 .OrderByDescending(x => x.Data)
                 .Take(10)
                 .ToList();

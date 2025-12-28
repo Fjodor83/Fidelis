@@ -64,15 +64,48 @@ namespace Fidelity.Server.Controllers
                     });
                 }
 
-                // Verifica password con BCrypt
-                if (!BCrypt.Net.BCrypt.Verify(request.Password, responsabile.PasswordHash))
+                // Check if account is locked
+                if (responsabile.AccountLockedUntil.HasValue && responsabile.AccountLockedUntil.Value > DateTime.UtcNow)
                 {
+                    var remainingMinutes = (int)(responsabile.AccountLockedUntil.Value - DateTime.UtcNow).TotalMinutes;
                     return Unauthorized(new LoginResponse
                     {
                         Success = false,
-                        Messaggio = "Username o password non corretti."
+                        Messaggio = $"Account temporaneamente bloccato. Riprova tra {remainingMinutes} minuti."
                     });
                 }
+
+                // Verifica password con BCrypt
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, responsabile.PasswordHash))
+                {
+                    // Increment failed attempts
+                    responsabile.FailedLoginAttempts++;
+                    
+                    // Lock account after 5 failed attempts
+                    if (responsabile.FailedLoginAttempts >= 5)
+                    {
+                        responsabile.AccountLockedUntil = DateTime.UtcNow.AddMinutes(15);
+                        await _context.SaveChangesAsync();
+                        
+                        return Unauthorized(new LoginResponse
+                        {
+                            Success = false,
+                            Messaggio = "Troppi tentativi falliti. Account bloccato per 15 minuti."
+                        });
+                    }
+                    
+                    await _context.SaveChangesAsync();
+                    
+                    return Unauthorized(new LoginResponse
+                    {
+                        Success = false,
+                        Messaggio = $"Username o password non corretti. Tentativi rimasti: {5 - responsabile.FailedLoginAttempts}"
+                    });
+                }
+
+                // Reset failed attempts on successful login
+                responsabile.FailedLoginAttempts = 0;
+                responsabile.AccountLockedUntil = null;
 
                 // Aggiorna ultimo accesso
                 responsabile.UltimoAccesso = DateTime.UtcNow;
@@ -81,13 +114,15 @@ namespace Fidelity.Server.Controllers
                 // Ottieni il primo punto vendita associato (se esiste)
                 var primoPuntoVendita = responsabile.ResponsabilePuntiVendita?.FirstOrDefault()?.PuntoVendita;
 
-                // Genera JWT Token
-                var token = GeneraJwtToken(responsabile, primoPuntoVendita?.Id);
+                // Genera JWT Token e Refresh Token
+                var (token, jwtId) = GeneraJwtToken(responsabile, primoPuntoVendita?.Id);
+                var refreshToken = await GeneraRefreshTokenAsync(jwtId, responsabileId: responsabile.Id);
 
                 return Ok(new LoginResponse
                 {
                     Success = true,
                     Token = token,
+                    RefreshToken = refreshToken,
                     ResponsabileId = responsabile.Id,
                     Username = responsabile.Username,
                     NomeCompleto = responsabile.NomeCompleto,
@@ -149,6 +184,52 @@ namespace Fidelity.Server.Controllers
         }
 
         /// <summary>
+        /// Cambia password per cliente autenticato
+        /// </summary>
+        [HttpPost("cliente/cambia-password")]
+        [Authorize(Roles = "Cliente")] // Assicurati che solo i clienti possano usare questo endpoint
+        public async Task<IActionResult> CambiaPasswordCliente([FromBody] CambiaPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var clienteId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var cliente = await _context.Clienti.FindAsync(clienteId);
+
+                if (cliente == null)
+                    return NotFound(new { success = false, messaggio = "Cliente non trovato." });
+
+                // Verifica password attuale
+                if (!BCrypt.Net.BCrypt.Verify(request.PasswordAttuale, cliente.PasswordHash))
+                {
+                    return BadRequest(new { success = false, messaggio = "Password attuale non corretta." });
+                }
+
+                // Salva nuova password
+                cliente.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NuovaPassword);
+                await _context.SaveChangesAsync();
+
+                // Rigenera token
+                var (nuovoToken, jwtId) = GeneraJwtToken(cliente);
+                var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: cliente.Id);
+
+                return Ok(new
+                {
+                    success = true,
+                    messaggio = "Password aggiornata con successo.",
+                    token = nuovoToken,
+                    refreshToken
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, messaggio = "Errore durante il cambio password." });
+            }
+        }
+
+        /// <summary>
         /// Completa profilo responsabile con nome e cognome reali
         /// </summary>
         [HttpPost("completa-profilo")]
@@ -180,32 +261,6 @@ namespace Fidelity.Server.Controllers
             {
                 return StatusCode(500, new { success = false, messaggio = "Errore durante il completamento del profilo." });
             }
-        }
-
-        private string GeneraJwtToken(Responsabile responsabile, int? puntoVenditaId)
-        {
-            var securityKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, responsabile.Id.ToString()),
-                new Claim(ClaimTypes.Name, responsabile.Username),
-                new Claim(ClaimTypes.Role, responsabile.Ruolo),
-                new Claim("PuntoVenditaId", puntoVenditaId?.ToString() ?? "0"),
-                new Claim("NomeCompleto", responsabile.NomeCompleto ?? "")
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(8),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         /// <summary>
@@ -243,28 +298,65 @@ namespace Fidelity.Server.Controllers
                     });
                 }
 
-                // Verifica password
-                if (!BCrypt.Net.BCrypt.Verify(request.Password, cliente.PasswordHash))
+                // Check if account is locked
+                if (cliente.AccountLockedUntil.HasValue && cliente.AccountLockedUntil.Value > DateTime.UtcNow)
                 {
+                    var remainingMinutes = (int)(cliente.AccountLockedUntil.Value - DateTime.UtcNow).TotalMinutes;
                     return Unauthorized(new LoginClienteResponse
                     {
                         Success = false,
-                        Messaggio = "Credenziali non valide."
+                        Messaggio = $"Account temporaneamente bloccato. Riprova tra {remainingMinutes} minuti."
                     });
                 }
 
-                var token = GeneraJwtToken(cliente);
+                // Verifica password
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, cliente.PasswordHash))
+                {
+                    // Increment failed attempts
+                    cliente.FailedLoginAttempts++;
+                    
+                    // Lock account after 5 failed attempts
+                    if (cliente.FailedLoginAttempts >= 5)
+                    {
+                        cliente.AccountLockedUntil = DateTime.UtcNow.AddMinutes(15);
+                        await _context.SaveChangesAsync();
+                        
+                        return Unauthorized(new LoginClienteResponse
+                        {
+                            Success = false,
+                            Messaggio = "Troppi tentativi falliti. Account bloccato per 15 minuti."
+                        });
+                    }
+                    
+                    await _context.SaveChangesAsync();
+                    
+                    return Unauthorized(new LoginClienteResponse
+                    {
+                        Success = false,
+                        Messaggio = $"Password non corretta. Tentativi rimasti: {5 - cliente.FailedLoginAttempts}"
+                    });
+                }
+
+                // Reset failed attempts on successful login
+                cliente.FailedLoginAttempts = 0;
+                cliente.AccountLockedUntil = null;
+
+                // Genera JWT Token
+                var (token, jwtId) = GeneraJwtToken(cliente);
+                var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: cliente.Id);
 
                 return Ok(new LoginClienteResponse
                 {
                     Success = true,
                     Token = token,
+                    RefreshToken = refreshToken,
                     ClienteId = cliente.Id,
+                    CodiceFidelity = cliente.CodiceFidelity,
+                    Email = cliente.Email,
                     Nome = cliente.Nome,
                     Cognome = cliente.Cognome,
-                    CodiceFidelity = cliente.CodiceFidelity,
                     PuntiTotali = cliente.PuntiTotali,
-                    Messaggio = "Benvenuto!"
+                    Messaggio = "Login effettuato con successo."
                 });
             }
             catch (Exception)
@@ -313,14 +405,17 @@ namespace Fidelity.Server.Controllers
                     cliente.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
                     cliente.PrivacyAccettata = request.PrivacyAccepted; // Aggiorna consenso privacy
                     
-                    await _context.SaveChangesAsync();
+                     await _context.SaveChangesAsync();
                      
                      // Login automatico
-                     var token = GeneraJwtToken(cliente);
+                     var (token, jwtId) = GeneraJwtToken(cliente);
+                     var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: cliente.Id);
+                     
                      return Ok(new LoginClienteResponse
                      {
                          Success = true,
                          Token = token,
+                         RefreshToken = refreshToken,
                          ClienteId = cliente.Id,
                          Nome = cliente.Nome,
                          Cognome = cliente.Cognome,
@@ -378,11 +473,14 @@ namespace Fidelity.Server.Controllers
                     catch {} // Ignora errori email per non bloccare registrazione
 
                     // Login automatico
-                    var token = GeneraJwtToken(nuovoCliente);
+                    var (token, jwtId) = GeneraJwtToken(nuovoCliente);
+                    var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: nuovoCliente.Id);
+                    
                     return Ok(new LoginClienteResponse
                     {
                         Success = true,
                         Token = token,
+                        RefreshToken = refreshToken,
                         ClienteId = nuovoCliente.Id,
                         Nome = nuovoCliente.Nome,
                         Cognome = nuovoCliente.Cognome,
@@ -398,31 +496,6 @@ namespace Fidelity.Server.Controllers
             }
         }
         
-        private string GeneraJwtToken(Cliente cliente)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, cliente.Id.ToString()),
-                new Claim(ClaimTypes.Name, cliente.Email),
-                new Claim(ClaimTypes.Role, "Cliente"),
-                new Claim("CodiceFidelity", cliente.CodiceFidelity),
-                new Claim("NomeCompleto", $"{cliente.Nome} {cliente.Cognome}")
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(30), // Clienti rimangono loggati più a lungo
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         private async Task<string> GeneraCodiceFidelityUnivocoAsync()
         {
             string codice;
@@ -436,5 +509,161 @@ namespace Fidelity.Server.Controllers
             while (esiste);
             return codice;
         }
+        
+        // ===== REFRESH TOKEN METHODS =====
+        
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<ActionResult<LoginResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            if (string.IsNullOrEmpty(request.RefreshToken))
+                return BadRequest(new { messaggio = "Refresh token mancante" });
+
+            var storedToken = await _context.RefreshTokens
+                .Include(rt => rt.Cliente)
+                .Include(rt => rt.Responsabile)
+                .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
+
+            if (storedToken == null)
+                return Unauthorized(new { messaggio = "Refresh token non valido" });
+
+            if (storedToken.IsUsed)
+                return Unauthorized(new { messaggio = "Refresh token già utilizzato" });
+
+            if (storedToken.IsRevoked)
+                return Unauthorized(new { messaggio = "Refresh token revocato" });
+
+            if (storedToken.ExpiryDate < DateTime.UtcNow)
+                return Unauthorized(new { messaggio = "Refresh token scaduto" });
+
+            // Mark token as used
+            storedToken.IsUsed = true;
+            await _context.SaveChangesAsync();
+
+            // Generate new tokens
+            if (storedToken.ClienteId.HasValue && storedToken.Cliente != null)
+            {
+                var (newToken, jwtId) = GeneraJwtToken(storedToken.Cliente);
+                var newRefreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: storedToken.ClienteId.Value);
+
+                return Ok(new LoginResponse
+                {
+                    Success = true,
+                    Token = newToken,
+                    RefreshToken = newRefreshToken,
+                    Messaggio = "Token rinnovato con successo"
+                });
+            }
+            else if (storedToken.ResponsabileId.HasValue && storedToken.Responsabile != null)
+            {
+                var responsabile = await _context.Responsabili
+                    .Include(r => r.ResponsabilePuntiVendita)
+                        .ThenInclude(rp => rp.PuntoVendita)
+                    .FirstOrDefaultAsync(r => r.Id == storedToken.ResponsabileId.Value);
+
+                if (responsabile == null)
+                    return Unauthorized(new { messaggio = "Utente non trovato" });
+
+                var primoPuntoVendita = responsabile.ResponsabilePuntiVendita?.FirstOrDefault()?.PuntoVendita;
+                var (newToken, jwtId) = GeneraJwtToken(responsabile, primoPuntoVendita?.Id);
+                var newRefreshToken = await GeneraRefreshTokenAsync(jwtId, responsabileId: storedToken.ResponsabileId.Value);
+
+                return Ok(new LoginResponse
+                {
+                    Success = true,
+                    Token = newToken,
+                    RefreshToken = newRefreshToken,
+                    ResponsabileId = responsabile.Id,
+                    Username = responsabile.Username,
+                    Ruolo = responsabile.Ruolo,
+                    Messaggio = "Token rinnovato con successo"
+                });
+            }
+
+            return Unauthorized(new { messaggio = "Refresh token non valido" });
+        }
+
+        private async Task<string> GeneraRefreshTokenAsync(string jwtId, int? clienteId = null, int? responsabileId = null)
+        {
+            var refreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "-" + Guid.NewGuid().ToString(),
+                JwtId = jwtId,
+                CreatedDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddDays(30),
+                IsUsed = false,
+                IsRevoked = false,
+                ClienteId = clienteId,
+                ResponsabileId = responsabileId
+            };
+
+            _context.RefreshTokens.Add(refreshToken);
+            await _context.SaveChangesAsync();
+
+            return refreshToken.Token;
+        }
+
+        private (string token, string jwtId) GeneraJwtToken(Responsabile responsabile, int? puntoVenditaId)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            
+            var jwtId = Guid.NewGuid().ToString();
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Jti, jwtId),
+                new Claim(ClaimTypes.NameIdentifier, responsabile.Id.ToString()),
+                new Claim(ClaimTypes.Name, responsabile.Username),
+                new Claim(ClaimTypes.Role, responsabile.Ruolo),
+                new Claim("NomeCompleto", responsabile.NomeCompleto ?? "")
+            };
+
+            if (puntoVenditaId.HasValue)
+            {
+                claims.Add(new Claim("PuntoVenditaId", puntoVenditaId.Value.ToString()));
+            }
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddHours(1),
+                signingCredentials: credentials
+            );
+
+            return (new JwtSecurityTokenHandler().WriteToken(token), jwtId);
+        }
+
+        private (string token, string jwtId) GeneraJwtToken(Cliente cliente)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            
+            var jwtId = Guid.NewGuid().ToString();
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Jti, jwtId),
+                new Claim(ClaimTypes.NameIdentifier, cliente.Id.ToString()),
+                new Claim(ClaimTypes.Name, cliente.Email),
+                new Claim(ClaimTypes.Role, "Cliente"),
+                new Claim("CodiceFidelity", cliente.CodiceFidelity),
+                new Claim("NomeCompleto", $"{cliente.Nome} {cliente.Cognome}")
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddHours(2),
+                signingCredentials: credentials
+            );
+
+            return (new JwtSecurityTokenHandler().WriteToken(token), jwtId);
+        }
     }
 }
+
+// DTO for Refresh Token Request
+public record RefreshTokenRequest(string RefreshToken);

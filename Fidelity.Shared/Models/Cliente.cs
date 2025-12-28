@@ -37,6 +37,10 @@ namespace Fidelity.Shared.Models
 
         public bool Attivo { get; set; } = true;
 
+        // Account Security
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? AccountLockedUntil { get; set; }
+
         public bool PrivacyAccettata { get; set; }
 
         // Link a transazioni

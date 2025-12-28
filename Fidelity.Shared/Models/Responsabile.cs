@@ -29,6 +29,10 @@ namespace Fidelity.Shared.Models
 
         public bool RichiestaResetPassword { get; set; } = false;
 
+        // Account Security
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? AccountLockedUntil { get; set; }
+
         public DateTime? UltimoAccesso { get; set; }
     }
 }

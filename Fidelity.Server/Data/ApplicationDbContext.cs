@@ -19,6 +19,7 @@ namespace Fidelity.Server.Data
         public DbSet<Transazione> Transazioni { get; set; }
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<CouponAssegnato> CouponAssegnati { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +76,23 @@ namespace Fidelity.Server.Data
                 .HasOne(rp => rp.PuntoVendita)
                 .WithMany(pv => pv.ResponsabilePuntiVendita)
                 .HasForeignKey(rp => rp.PuntoVenditaId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // RefreshToken configuration
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.Token)
+                .IsUnique();
+            
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.Cliente)
+                .WithMany()
+                .HasForeignKey(rt => rt.ClienteId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.Responsabile)
+                .WithMany()
+                .HasForeignKey(rt => rt.ResponsabileId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
