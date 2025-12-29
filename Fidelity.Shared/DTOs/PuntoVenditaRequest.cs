@@ -21,6 +21,7 @@ namespace Fidelity.Shared.DTOs
         [StringLength(200, ErrorMessage = "L'indirizzo non può superare 200 caratteri")]
         public string Indirizzo { get; set; }
 
+        [Required(ErrorMessage = "Telefono obbligatorio")]
         [Phone(ErrorMessage = "Numero di telefono non valido")]
         [StringLength(20, ErrorMessage = "Il telefono non può superare 20 caratteri")]
         public string Telefono { get; set; }

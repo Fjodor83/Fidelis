@@ -288,16 +288,14 @@ namespace Fidelity.Server.Controllers
                     });
                 }
 
-                // Verifica se ci sono responsabili associati tramite junction table
-                var numeroResponsabili = await _context.ResponsabilePuntiVendita
-                    .CountAsync(rp => rp.PuntoVenditaId == id);
+                // Rimuovi associazioni con responsabili (junction table)
+                var associazioni = await _context.ResponsabilePuntiVendita
+                    .Where(rp => rp.PuntoVenditaId == id)
+                    .ToListAsync();
 
-                if (numeroResponsabili > 0)
+                if (associazioni.Any())
                 {
-                    return BadRequest(new { 
-                        messaggio = $"Impossibile eliminare il punto vendita. Ci sono {numeroResponsabili} responsabili associati.",
-                        numeroResponsabili = numeroResponsabili
-                    });
+                    _context.ResponsabilePuntiVendita.RemoveRange(associazioni);
                 }
 
                 _context.PuntiVendita.Remove(puntoVendita);

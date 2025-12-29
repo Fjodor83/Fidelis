@@ -541,55 +541,63 @@
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
-                    <h5 class="modal-title text-white">
-                        @(negozioInModifica == null ? "Nuovo Negozio" : "Modifica Negozio")
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleNegozio"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Codice</label>
-                        <input @bind="negozioForm.Codice" class="form-control" placeholder="NE01" />
+                <EditForm Model="@negozioForm" OnValidSubmit="SalvaNegozio">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header" style="background: linear-gradient(135deg, #105a12ff 0%, #053e30ff 100%);">
+                        <h5 class="modal-title text-white">
+                            @(negozioInModifica == null ? "Nuovo Negozio" : "Modifica Negozio")
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="ChiudiModaleNegozio"></button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nome</label>
-                        <input @bind="negozioForm.Nome" class="form-control" placeholder="Suns Centro" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Città</label>
-                        <input @bind="negozioForm.Citta" class="form-control" placeholder="Roma" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Indirizzo</label>
-                        <input @bind="negozioForm.Indirizzo" class="form-control" placeholder="Via del Corso 1" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Telefono</label>
-                        <input @bind="negozioForm.Telefono" class="form-control" placeholder="+39 06 1234567" />
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" @bind="negozioForm.Attivo" id="checkAttivo">
-                        <label class="form-check-label" for="checkAttivo">
-                            Negozio attivo
-                        </label>
-                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Codice</label>
+                            <InputText @bind-Value="negozioForm.Codice" class="form-control" placeholder="NE01" />
+                            <ValidationMessage For="@(() => negozioForm.Codice)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome</label>
+                            <InputText @bind-Value="negozioForm.Nome" class="form-control" placeholder="Suns Centro" />
+                            <ValidationMessage For="@(() => negozioForm.Nome)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Città</label>
+                            <InputText @bind-Value="negozioForm.Citta" class="form-control" placeholder="Roma" />
+                            <ValidationMessage For="@(() => negozioForm.Citta)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Indirizzo</label>
+                            <InputText @bind-Value="negozioForm.Indirizzo" class="form-control" placeholder="Via del Corso 1" />
+                            <ValidationMessage For="@(() => negozioForm.Indirizzo)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Telefono</label>
+                            <InputText @bind-Value="negozioForm.Telefono" class="form-control" placeholder="+39 06 1234567" />
+                            <ValidationMessage For="@(() => negozioForm.Telefono)" />
+                        </div>
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="negozioForm.Attivo" class="form-check-input" id="checkAttivo" />
+                            <label class="form-check-label" for="checkAttivo">
+                                Negozio attivo
+                            </label>
+                        </div>
 
-                    @if (!string.IsNullOrEmpty(messaggioErroreNegozio))
-                    {
-                        <div class="alert alert-danger mt-3">@messaggioErroreNegozio</div>
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="ChiudiModaleNegozio">Annulla</button>
-                    <button class="btn btn-primary" @onclick="SalvaNegozio" disabled="@isLoading">
-                        @if (isLoading)
+                        @if (!string.IsNullOrEmpty(messaggioErroreNegozio))
                         {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <div class="alert alert-danger mt-3">@messaggioErroreNegozio</div>
                         }
-                        Salva
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="ChiudiModaleNegozio">Annulla</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Salva
+                        </button>
+                    </div>
+                </EditForm>
             </div>
         </div>
     </div>
