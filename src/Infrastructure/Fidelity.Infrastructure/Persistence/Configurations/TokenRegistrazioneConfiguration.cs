@@ -27,12 +27,14 @@ public class TokenRegistrazioneConfiguration : IEntityTypeConfiguration<TokenReg
         builder.HasOne(t => t.PuntoVendita)
             .WithMany()
             .HasForeignKey(t => t.PuntoVenditaId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(t => t.Responsabile)
             .WithMany(r => r.TokenRegistrazioniCreati)
             .HasForeignKey(t => t.ResponsabileId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         // Indexes
         builder.HasIndex(t => t.Email);

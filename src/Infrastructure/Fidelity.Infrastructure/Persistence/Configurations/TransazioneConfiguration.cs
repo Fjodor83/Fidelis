@@ -27,12 +27,14 @@ public class TransazioneConfiguration : IEntityTypeConfiguration<Transazione>
         builder.HasOne(t => t.Cliente)
             .WithMany(c => c.Transazioni)
             .HasForeignKey(t => t.ClienteId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(t => t.PuntoVendita)
             .WithMany(p => p.Transazioni)
             .HasForeignKey(t => t.PuntoVenditaId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(t => t.Responsabile)
             .WithMany(r => r.Transazioni)

@@ -18,18 +18,21 @@ public class CouponAssegnatoConfiguration : IEntityTypeConfiguration<CouponAsseg
         builder.Property(ca => ca.Motivo)
             .HasConversion<string>()
             .HasMaxLength(20)
-            .HasDefaultValue(MotivoAssegnazione.Manuale);
+            .HasDefaultValue(MotivoAssegnazione.Manuale)
+            .HasSentinel((MotivoAssegnazione)(-1));
 
         // Relationships
         builder.HasOne(ca => ca.Coupon)
             .WithMany(c => c.CouponAssegnati)
             .HasForeignKey(ca => ca.CouponId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(ca => ca.Cliente)
             .WithMany(c => c.CouponAssegnati)
             .HasForeignKey(ca => ca.ClienteId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(ca => ca.ResponsabileUtilizzo)
             .WithMany()

@@ -15,11 +15,13 @@ public class ResponsabilePuntoVenditaConfiguration : IEntityTypeConfiguration<Re
         builder.HasOne(rp => rp.Responsabile)
             .WithMany(r => r.ResponsabilePuntiVendita)
             .HasForeignKey(rp => rp.ResponsabileId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
 
         builder.HasOne(rp => rp.PuntoVendita)
             .WithMany(pv => pv.ResponsabilePuntiVendita)
             .HasForeignKey(rp => rp.PuntoVenditaId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
     }
 }
