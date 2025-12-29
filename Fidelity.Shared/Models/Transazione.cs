@@ -1,5 +1,5 @@
 ﻿// Fidelity.Shared/Models/Transazione.cs
-using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Fidelity.Shared.Models
 {
@@ -15,6 +15,7 @@ namespace Fidelity.Shared.Models
 
         public int PuntiAssegnati { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
         public decimal? ImportoSpesa { get; set; }
 
         public DateTime DataTransazione { get; set; }

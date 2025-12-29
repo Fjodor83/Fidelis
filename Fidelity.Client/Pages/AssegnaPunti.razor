@@ -39,19 +39,16 @@
                         <h5 class="mb-0"><i class="bi bi-search me-2"></i>Cerca Cliente</h5>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row align-items-end">
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold">Codice Fedeltà</label>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">Codice Fedeltà</label>
+                            <div class="input-group input-group-lg">
                                 <input @bind="codiceFidelity" 
                                        @bind:event="oninput"
                                        @onkeypress="@(async e => { if (e.Key == "Enter") await CercaCliente(); })"
-                                       class="form-control form-control-lg" 
+                                       class="form-control" 
                                        placeholder="SUN123456789"
                                        maxlength="12" />
-                                <small class="text-muted">Inserisci il codice o scansiona il QR code della card</small>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-primary btn-lg w-100" @onclick="CercaCliente" disabled="@isLoading">
+                                <button class="btn btn-primary px-4" @onclick="CercaCliente" disabled="@isLoading">
                                     @if (isLoading)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -59,6 +56,9 @@
                                     <i class="bi bi-search me-2"></i>Cerca
                                 </button>
                             </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle me-1"></i>Inquadra il QR Code o inserisci manualmente il codice
+                            </small>
                         </div>
 
                         @if (!string.IsNullOrEmpty(messaggioErrore))
