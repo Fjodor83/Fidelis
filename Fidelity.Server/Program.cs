@@ -1,6 +1,6 @@
 ﻿using Fidelity.Server.Services;
 using Fidelity.Server.Middleware;
-using Fidelity.Server.Repositories;
+
 using Fidelity.Infrastructure.Persistence;
 using Fidelity.Application.Common.Interfaces;
 using Fidelity.Application.Clienti.Commands.RegistraCliente;
@@ -65,8 +65,7 @@ try
     builder.Services.AddScoped<ICouponService, CouponService>();
     builder.Services.AddScoped<IClienteService, ClienteService>();
     builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-    builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-    builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+
 
     // Rate Limiting Configuration
     builder.Services.AddSingleton(new RateLimitOptions
