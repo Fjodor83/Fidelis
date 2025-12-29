@@ -1,4 +1,4 @@
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 
 namespace Fidelity.Server.Repositories;
 

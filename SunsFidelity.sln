@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11304.174 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Client", "Fidelity.Client\Fidelity.Client.csproj", "{B78597A0-F30C-4B9B-AB29-0EEC0E5B8963}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Shared", "Fidelity.Shared\Fidelity.Shared.csproj", "{B67BE9BB-45BE-4024-A41E-4F4DE23A49B6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Server", "Fidelity.Server\Fidelity.Server.csproj", "{61244542-99DE-4E04-9ADB-0B8757E2F03D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Tests", "Fidelity.Tests\Fidelity.Tests.csproj", "{36E64C55-4F28-400A-8ED8-A524E40F37A0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -69,18 +67,6 @@ Global
 		{61244542-99DE-4E04-9ADB-0B8757E2F03D}.Release|x64.Build.0 = Release|Any CPU
 		{61244542-99DE-4E04-9ADB-0B8757E2F03D}.Release|x86.ActiveCfg = Release|Any CPU
 		{61244542-99DE-4E04-9ADB-0B8757E2F03D}.Release|x86.Build.0 = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|x64.Build.0 = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Debug|x86.Build.0 = Debug|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|x64.ActiveCfg = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|x64.Build.0 = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|x86.ActiveCfg = Release|Any CPU
-		{36E64C55-4F28-400A-8ED8-A524E40F37A0}.Release|x86.Build.0 = Release|Any CPU
 		{140F9B2D-CE28-4C86-9A5A-5373EA71679A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{140F9B2D-CE28-4C86-9A5A-5373EA71679A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{140F9B2D-CE28-4C86-9A5A-5373EA71679A}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -127,5 +113,8 @@ Global
 		{A9F6DA64-F198-49B4-9C18-BA9CC484A03D} = {8D626EA8-CB54-BC41-363A-217881BEBA6E}
 		{9048EB7F-3875-A59E-E36B-5BD4C6F2A282} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1E227D84-6870-49CD-8F18-0C66887DA0E1} = {9048EB7F-3875-A59E-E36B-5BD4C6F2A282}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DD83E9C4-8CB9-4FB2-912E-19AF70BE4573}
 	EndGlobalSection
 EndGlobal

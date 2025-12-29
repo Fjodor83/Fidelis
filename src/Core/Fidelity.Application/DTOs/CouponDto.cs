@@ -1,26 +1,41 @@
 namespace Fidelity.Application.DTOs;
 
-public class CouponDto
+/// <summary>
+/// Coupon DTOs
+/// </summary>
+
+public record CouponDto
 {
-    public int Id { get; set; }
-    public string Codice { get; set; } = string.Empty;
-    public string Titolo { get; set; } = string.Empty;
-    public string? Descrizione { get; set; }
-    public decimal ValoreSconto { get; set; }
-    public string TipoSconto { get; set; } = string.Empty;
-    public DateTime DataInizio { get; set; }
-    public DateTime DataScadenza { get; set; }
-    public bool Attivo { get; set; }
-    public bool IsValido { get; set; }
+    public int Id { get; init; }
+    public string Codice { get; init; } = string.Empty;
+    public string Titolo { get; init; } = string.Empty;
+    public string? Descrizione { get; init; }
+    public decimal ValoreSconto { get; init; }
+    public string TipoSconto { get; init; } = "Percentuale";
+    public DateTime DataInizio { get; init; }
+    public DateTime DataScadenza { get; init; }
+    public bool Attivo { get; init; }
+    public int? LimiteUtilizzoGlobale { get; init; }
+    public int UtilizziTotali { get; init; }
+    public decimal? ImportoMinimoOrdine { get; init; }
 }
 
-public class CouponAssegnatoDto
+public record CouponAssegnatoDto
 {
-    public int Id { get; set; }
-    public int CouponId { get; set; }
-    public CouponDto Coupon { get; set; } = new();
-    public int ClienteId { get; set; }
-    public DateTime DataAssegnazione { get; set; }
-    public DateTime? DataUtilizzo { get; set; }
-    public bool Utilizzato { get; set; }
+    public int Id { get; init; }
+    public int CouponId { get; init; }
+    public string Codice { get; init; } = string.Empty;
+    public string Titolo { get; init; } = string.Empty;
+    public string? Descrizione { get; init; }
+    public decimal ValoreSconto { get; init; }
+    public string TipoSconto { get; init; } = "Percentuale";
+    public DateTime DataInizio { get; init; }
+    public DateTime DataScadenza { get; init; }
+    public DateTime DataAssegnazione { get; init; }
+    public bool Utilizzato { get; init; }
+    public DateTime? DataUtilizzo { get; init; }
+    public decimal? ImportoMinimoOrdine { get; init; }
+
+    public bool IsScaduto => !Utilizzato && DataScadenza < DateTime.UtcNow;
+    public bool IsAttivo => !Utilizzato && !IsScaduto;
 }

@@ -1,7 +1,8 @@
 using AutoMapper;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
+using Fidelity.Application.Common.Interfaces;
+using Fidelity.Domain.Entities;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fidelity.Server.Services
@@ -39,10 +40,6 @@ namespace Fidelity.Server.Services
                 throw new ArgumentException("L'importo è troppo basso per assegnare punti (minimo 10€).");
             }
 
-            // If Responsabile is "Admin", PuntoVendita might be 0 or passed explicitly.
-            // Logic handled by caller for ID, but here we enforce relation.
-            // Actually, controller passed explicit puntoVenditaId strategy.
-
             var transazione = new Transazione
             {
                 ClienteId = cliente.Id,
@@ -51,7 +48,7 @@ namespace Fidelity.Server.Services
                 PuntiAssegnati = puntiDaAssegnare,
                 ImportoSpesa = request.ImportoSpesa,
                 DataTransazione = DateTime.UtcNow,
-                TipoTransazione = "Accumulo",
+                Tipo = TipoTransazione.Accumulo,
                 Note = request.Note ?? $"Acquisto di {request.ImportoSpesa:C}"
             };
 
@@ -61,31 +58,23 @@ namespace Fidelity.Server.Services
             await _context.SaveChangesAsync();
 
             await _context.Entry(transazione).Reference(t => t.PuntoVendita).LoadAsync();
-            
-            // Should load Responsabile too if needed for Response mapping
-            // But ResponsabileId is set.
-            // Only if response needs Responsabile Name. MappingProfile uses it?
-            // Yes: .ForMember(dest => dest.ResponsabileNome, opt => opt.MapFrom(src => src.Responsabile.Username))
-            // So we need to load it or fake it.
-            // If ID is set, EF typically doesn't auto-load prop unless requested.
-            // But we can just reload it.
-             await _context.Entry(transazione).Reference(t => t.Responsabile).LoadAsync();
+            await _context.Entry(transazione).Reference(t => t.Responsabile).LoadAsync();
 
             var response = _mapper.Map<TransazioneResponse>(transazione);
 
             // Fire and Forget Email
-            _ = Task.Run(() =>
-                _emailService.InviaEmailPuntiGuadagnatiAsync(
+            _ = Task.Run(async () =>
+                await _emailService.InviaEmailPuntiAssegnatiAsync(
                     cliente.Email,
                     cliente.Nome,
                     puntiDaAssegnare,
                     cliente.PuntiTotali,
-                    transazione.PuntoVendita.Nome));
+                    request.ImportoSpesa));
 
             return response;
         }
 
-        public async Task<ClienteDettaglioResponse> GetClienteDettaglioAsync(string codiceFidelity)
+        public async Task<ClienteDettaglioResponse?> GetClienteDettaglioAsync(string codiceFidelity)
         {
             var cliente = await _context.Clienti
                 .Include(c => c.PuntoVenditaRegistrazione)
@@ -93,8 +82,6 @@ namespace Fidelity.Server.Services
 
             if (cliente == null)
             {
-                 // Service returns null or throws? Controller returns NotFound if null.
-                 // Returing null allows Controller to handle 404.
                  return null;
             }
 
@@ -120,9 +107,6 @@ namespace Fidelity.Server.Services
                 .Include(t => t.Responsabile)
                 .AsQueryable();
 
-            // 0 or -1 could mean "All" for Admin, but usually we pass specific ID or handled by caller.
-            // If passed 0, we assume no filter (Admin view) IF logic allows.
-            // Logic: if puntoVenditaId > 0, filter.
             if (puntoVenditaId > 0)
             {
                 query = query.Where(t => t.PuntoVenditaId == puntoVenditaId);

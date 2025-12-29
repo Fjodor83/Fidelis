@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
-using Fidelity.Shared.Models;
+using Fidelity.Infrastructure.Persistence;
+using Fidelity.Domain.Entities;
 
 namespace Fidelity.Server.Repositories;
 

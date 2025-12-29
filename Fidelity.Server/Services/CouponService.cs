@@ -1,8 +1,8 @@
 using AutoMapper;
-using Fidelity.Server.Data;
-using Fidelity.Server.Services;
+using Fidelity.Infrastructure.Persistence;
+using Fidelity.Application.Common.Interfaces;
+using Fidelity.Domain.Entities;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fidelity.Server.Services
@@ -48,67 +48,69 @@ namespace Fidelity.Server.Services
         }
 
         public async Task<CouponDTO> CreateCouponAsync(CouponRequest request)
-{
-    if (await _context.Coupons.AnyAsync(c => c.Codice == request.Codice))
-        throw new ArgumentException("Esiste già un coupon con questo codice.");
-
-    var coupon = new Coupon
-    {
-        Codice = request.Codice.ToUpper(),
-        Titolo = request.Titolo,
-        Descrizione = request.Descrizione,
-        ValoreSconto = request.ValoreSconto,
-        TipoSconto = request.TipoSconto,
-        DataInizio = request.DataInizio,
-        DataScadenza = request.DataScadenza,
-        Attivo = request.Attivo
-    };
-
-    _context.Coupons.Add(coupon);
-    await _context.SaveChangesAsync();
-
-    // ✅ ASSEGNA IL COUPON A TUTTI I CLIENTI ATTIVI
-    if (coupon.Attivo)
-    {
-        var clientiAttivi = await _context.Clienti
-            .Where(c => c.Attivo && !string.IsNullOrEmpty(c.Email))
-            .ToListAsync();
-
-        foreach (var cliente in clientiAttivi)
         {
-            // ✅ CREA L'ASSEGNAZIONE
-            var assegnazione = new CouponAssegnato
-            {
-                CouponId = coupon.Id,
-                ClienteId = cliente.Id,
-                DataAssegnazione = DateTime.UtcNow,
-                Utilizzato = false
-            };
-            _context.CouponAssegnati.Add(assegnazione);
+            if (await _context.Coupons.AnyAsync(c => c.Codice == request.Codice))
+                throw new ArgumentException("Esiste già un coupon con questo codice.");
 
-            // Invia email
-            try
+            var coupon = new Coupon
             {
-                await _emailService.InviaEmailNuovoCouponAsync(
-                    cliente.Email,
-                    cliente.Nome,
-                    coupon.Titolo,
-                    coupon.Codice,
-                    coupon.DataScadenza
-                );
-            }
-            catch (Exception ex)
+                Codice = request.Codice.ToUpper(),
+                Titolo = request.Titolo,
+                Descrizione = request.Descrizione,
+                ValoreSconto = request.ValoreSconto,
+                TipoSconto = Enum.TryParse<TipoSconto>(request.TipoSconto, true, out var tipo) ? tipo : TipoSconto.Percentuale,
+                DataInizio = request.DataInizio,
+                DataScadenza = request.DataScadenza,
+                Attivo = request.Attivo
+            };
+
+            _context.Coupons.Add(coupon);
+            await _context.SaveChangesAsync();
+
+            // ✅ ASSEGNA IL COUPON A TUTTI I CLIENTI ATTIVI
+            if (coupon.Attivo)
             {
-                Console.WriteLine($"Errore invio email a {cliente.Email}: {ex.Message}");
+                var clientiAttivi = await _context.Clienti
+                    .Where(c => c.Attivo && !string.IsNullOrEmpty(c.Email))
+                    .ToListAsync();
+
+                foreach (var cliente in clientiAttivi)
+                {
+                    // ✅ CREA L'ASSEGNAZIONE
+                    var assegnazione = new CouponAssegnato
+                    {
+                        CouponId = coupon.Id,
+                        ClienteId = cliente.Id,
+                        DataAssegnazione = DateTime.UtcNow,
+                        Utilizzato = false,
+                        Motivo = MotivoAssegnazione.Automatico
+                    };
+                    _context.CouponAssegnati.Add(assegnazione);
+
+                    // Invia email
+                    try
+                    {
+                        await _emailService.InviaEmailNuovoCouponAsync(
+                            cliente.Email,
+                            cliente.Nome,
+                            coupon.Titolo,
+                            coupon.Codice,
+                            coupon.DataScadenza
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Errore invio email a {cliente.Email}: {ex.Message}");
+                    }
+                }
+
+                // ✅ SALVA TUTTE LE ASSEGNAZIONI
+                await _context.SaveChangesAsync();
             }
+
+            return _mapper.Map<CouponDTO>(coupon);
         }
 
-        // ✅ SALVA TUTTE LE ASSEGNAZIONI
-        await _context.SaveChangesAsync();
-    }
-
-    return _mapper.Map<CouponDTO>(coupon);
-}
         public async Task<CouponDTO?> UpdateCouponAsync(int id, CouponRequest request)
         {
             var coupon = await _context.Coupons.FindAsync(id);
@@ -126,7 +128,7 @@ namespace Fidelity.Server.Services
             coupon.Titolo = request.Titolo;
             coupon.Descrizione = request.Descrizione;
             coupon.ValoreSconto = request.ValoreSconto;
-            coupon.TipoSconto = request.TipoSconto;
+            coupon.TipoSconto = Enum.TryParse<TipoSconto>(request.TipoSconto, true, out var tipo) ? tipo : TipoSconto.Percentuale;
             coupon.DataInizio = request.DataInizio;
             coupon.DataScadenza = request.DataScadenza;
             coupon.Attivo = request.Attivo;
@@ -135,23 +137,24 @@ namespace Fidelity.Server.Services
 
             return _mapper.Map<CouponDTO>(coupon);
         }
-                public async Task DeleteCouponAsync(int id)
-                {
-                    var coupon = await _context.Coupons.FindAsync(id);
-                    if (coupon == null) return; 
 
-                    try
-                    {
-                        _context.Coupons.Remove(coupon);
-                        await _context.SaveChangesAsync();
-                    }
-                    catch
-                    {
-                        // Soft delete fallback
-                        coupon.Attivo = false;
-                        await _context.SaveChangesAsync();
-                    }
-                }
+        public async Task DeleteCouponAsync(int id)
+        {
+            var coupon = await _context.Coupons.FindAsync(id);
+            if (coupon == null) return; 
+
+            try
+            {
+                _context.Coupons.Remove(coupon);
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                // Soft delete fallback
+                coupon.Attivo = false;
+                await _context.SaveChangesAsync();
+            }
+        }
 
         public async Task AssegnaCouponAsync(int couponId, int clienteId)
         {
@@ -177,7 +180,8 @@ namespace Fidelity.Server.Services
                 CouponId = couponId,
                 ClienteId = clienteId,
                 DataAssegnazione = DateTime.UtcNow,
-                Utilizzato = false
+                Utilizzato = false,
+                Motivo = MotivoAssegnazione.Manuale
             };
 
             _context.CouponAssegnati.Add(assegnazione);

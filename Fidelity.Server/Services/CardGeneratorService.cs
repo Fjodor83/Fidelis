@@ -1,20 +1,17 @@
 ﻿using SkiaSharp;
 using QRCoder;
-using Fidelity.Shared.Models;
+using Fidelity.Application.Common.Interfaces;
+using Fidelity.Domain.Entities;
 
 namespace Fidelity.Server.Services;
 
-public interface ICardGeneratorService
-{
-    Task<byte[]> GeneraCardDigitaleAsync(Cliente cliente, PuntoVendita puntoVendita);
-}
-
 public class CardGeneratorService : ICardGeneratorService
 {
-    public async Task<byte[]> GeneraCardDigitaleAsync(Cliente cliente, PuntoVendita puntoVendita)
+    public async Task<byte[]> GeneraCardDigitaleAsync(Cliente cliente, PuntoVendita? puntoVendita)
     {
         return await Task.Run(() =>
         {
+            var puntoVenditaNome = puntoVendita?.Nome ?? "Suns Fidelity Card";
             const int width = 800;
             const int height = 500;
             
@@ -47,7 +44,7 @@ public class CardGeneratorService : ICardGeneratorService
                 paint.Color = SKColors.White;
                 paint.TextSize = 24;
                 paint.IsAntialias = true;
-                canvas.DrawText(puntoVendita.Nome, 40, 100, paint);
+                canvas.DrawText(puntoVenditaNome, 40, 100, paint);
             }
             
             using (var paint = new SKPaint())
@@ -89,6 +86,17 @@ public class CardGeneratorService : ICardGeneratorService
             using var image = surface.Snapshot();
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
             return data.ToArray();
+        });
+    }
+
+    public async Task<byte[]> GeneraQRCodeAsync(string contenuto, int dimensione = 200)
+    {
+        return await Task.Run(() =>
+        {
+            var qrGenerator = new QRCodeGenerator();
+            var qrCodeData = qrGenerator.CreateQrCode(contenuto, QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new PngByteQRCode(qrCodeData);
+            return qrCode.GetGraphic(dimensione / 10); // Approximation
         });
     }
 }

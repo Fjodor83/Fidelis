@@ -1,16 +1,16 @@
-﻿// Fidelity.Server/Controllers/RegistrazioneController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
 using Fidelity.Server.Services;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 using AutoMapper;
+using Fidelity.Application.Common.Interfaces;
 
 namespace Fidelity.Server.Controllers
 {
@@ -97,25 +97,14 @@ namespace Fidelity.Server.Controllers
                     });
                 }
 
-                // Genera nuovo token 16 cifre
-                var token = GeneraToken16Cifre();
-
-                // Crea record token
-                var nuovoToken = new TokenRegistrazione
-                {
-                    Email = request.Email,
-                    Token = token,
-                    PuntoVenditaId = request.PuntoVenditaId,
-                    ResponsabileId = responsabileId,
-                    DataCreazione = DateTime.UtcNow,
-                    DataScadenza = DateTime.UtcNow.AddMinutes(15)
-                };
+                // Genera nuovo token tramite domain entity factory
+                var nuovoToken = TokenRegistrazione.Create(request.Email, request.PuntoVenditaId, responsabileId);
 
                 _context.TokenRegistrazione.Add(nuovoToken);
                 await _context.SaveChangesAsync();
 
                 // Genera link registrazione
-                var linkRegistrazione = $"{_configuration["AppUrl"]}/registrazione/{token}";
+                var linkRegistrazione = $"{_configuration["AppUrl"]}/registrazione/{nuovoToken.Token}";
 
                 // Ottieni info punto vendita per email
                 var puntoVendita = await _context.PuntiVendita
@@ -125,7 +114,7 @@ namespace Fidelity.Server.Controllers
                 var (emailInviata, queryError) = await _emailService.InviaEmailVerificaAsync(
                     request.Email,
                     "Cliente", // Nome generico, sarà inserito dopo
-                    token,
+                    nuovoToken.Token,
                     linkRegistrazione,
                     puntoVendita?.Nome ?? "Suns"
                 );
@@ -133,7 +122,7 @@ namespace Fidelity.Server.Controllers
                 return Ok(new VerificaEmailResponse
                 {
                     Valida = true,
-                    Token = token,
+                    Token = nuovoToken.Token,
                     LinkRegistrazione = linkRegistrazione,
                     Messaggio = emailInviata
                         ? "Email di verifica inviata con successo."
@@ -172,7 +161,7 @@ namespace Fidelity.Server.Controllers
                 if (tokenRecord.Utilizzato)
                     return BadRequest(new { valido = false, messaggio = "Questo token è già stato utilizzato." });
 
-                if (tokenRecord.DataScadenza < DateTime.UtcNow)
+                if (tokenRecord.IsScaduto())
                     return BadRequest(new { valido = false, messaggio = "Token scaduto. Recati nuovamente in negozio." });
 
                 return Ok(new
@@ -209,7 +198,7 @@ namespace Fidelity.Server.Controllers
                     .Include(t => t.PuntoVendita)
                     .FirstOrDefaultAsync(t => t.Token == request.Token);
 
-                if (tokenRecord == null || tokenRecord.Utilizzato || tokenRecord.DataScadenza < DateTime.UtcNow)
+                if (tokenRecord == null || tokenRecord.Utilizzato || tokenRecord.IsScaduto())
                 {
                     return BadRequest(new { success = false, messaggio = "Token non valido o scaduto." });
                 }
@@ -217,7 +206,7 @@ namespace Fidelity.Server.Controllers
                 // Genera codice fidelity univoco
                 var codiceFidelity = await GeneraCodiceFidelityUnivocoAsync();
 
-                // Crea cliente
+                // Crea cliente tramite entity
                 var nuovoCliente = new Cliente
                 {
                     CodiceFidelity = codiceFidelity,
@@ -229,15 +218,15 @@ namespace Fidelity.Server.Controllers
                     PuntoVenditaRegistrazioneId = tokenRecord.PuntoVenditaId,
                     ResponsabileRegistrazioneId = tokenRecord.ResponsabileId,
                     PrivacyAccettata = request.PrivacyAccettata,
+                    PrivacyAccettataData = request.PrivacyAccettata ? DateTime.UtcNow : null,
                     Attivo = true,
                     PuntiTotali = 0
                 };
 
                 _context.Clienti.Add(nuovoCliente);
 
-                // Marca token come utilizzato
-                tokenRecord.Utilizzato = true;
-                tokenRecord.DataUtilizzo = DateTime.UtcNow;
+                // Marca token come utilizzato via domain method
+                tokenRecord.SegnaUtilizzato();
 
                 await _context.SaveChangesAsync();
 
@@ -246,15 +235,11 @@ namespace Fidelity.Server.Controllers
                     .Include(c => c.PuntoVenditaRegistrazione)
                     .FirstAsync(c => c.Id == nuovoCliente.Id);
 
-                // Genera card digitale (solo su Windows per System.Drawing)
-                byte[] cardDigitale = Array.Empty<byte>();
-                if (OperatingSystem.IsWindows())
-                {
-                    cardDigitale = await _cardGenerator.GeneraCardDigitaleAsync(
-                        nuovoCliente,
-                        nuovoCliente.PuntoVenditaRegistrazione
-                    );
-                }
+                // Genera card digitale
+                byte[] cardDigitale = await _cardGenerator.GeneraCardDigitaleAsync(
+                    nuovoCliente,
+                    nuovoCliente.PuntoVenditaRegistrazione
+                );
 
                 // Invia email benvenuto con card
                 await _emailService.InviaEmailBenvenutoAsync(
@@ -271,18 +256,10 @@ namespace Fidelity.Server.Controllers
                     cliente = _mapper.Map<ClienteResponse>(nuovoCliente)
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, messaggio = "Errore durante la registrazione." });
+                return StatusCode(500, new { success = false, messaggio = "Errore durante la registrazione.", errore = ex.Message });
             }
-        }
-
-        private string GeneraToken16Cifre()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            return new string(Enumerable.Repeat(chars, 16)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
         private async Task<string> GeneraCodiceFidelityUnivocoAsync()

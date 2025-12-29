@@ -1,5 +1,5 @@
 using AutoMapper;
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 using Fidelity.Shared.DTOs;
 
 namespace Fidelity.Server
@@ -13,7 +13,8 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
                 .ForMember(dest => dest.CodiceFidelity, opt => opt.MapFrom(src => src.Cliente.CodiceFidelity))
                 .ForMember(dest => dest.PuntoVenditaNome, opt => opt.MapFrom(src => src.PuntoVendita.Nome))
-                .ForMember(dest => dest.ResponsabileNome, opt => opt.MapFrom(src => src.Responsabile.NomeCompleto ?? src.Responsabile.Username));
+                .ForMember(dest => dest.ResponsabileNome, opt => opt.MapFrom(src => src.Responsabile != null ? (src.Responsabile.NomeCompleto ?? src.Responsabile.Username) : "Sistema"))
+                .ForMember(dest => dest.TipoTransazione, opt => opt.MapFrom(src => src.Tipo.ToString()));
 
             // Cliente -> ClienteDettaglioResponse
             CreateMap<Cliente, ClienteDettaglioResponse>()
@@ -27,7 +28,8 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.PuntoVenditaCodice, opt => opt.MapFrom(src => src.PuntoVenditaRegistrazione != null ? src.PuntoVenditaRegistrazione.Codice : null));
 
             // Coupon -> CouponDTO
-            CreateMap<Coupon, CouponDTO>();
+            CreateMap<Coupon, CouponDTO>()
+                .ForMember(dest => dest.TipoSconto, opt => opt.MapFrom(src => src.TipoSconto.ToString()));
 
             // CouponAssegnato -> CouponAssegnatoDTO
             CreateMap<CouponAssegnato, CouponAssegnatoDTO>()
@@ -35,7 +37,7 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.Titolo, opt => opt.MapFrom(src => src.Coupon.Titolo))
                 .ForMember(dest => dest.Descrizione, opt => opt.MapFrom(src => src.Coupon.Descrizione))
                 .ForMember(dest => dest.ValoreSconto, opt => opt.MapFrom(src => src.Coupon.ValoreSconto))
-                .ForMember(dest => dest.TipoSconto, opt => opt.MapFrom(src => src.Coupon.TipoSconto))
+                .ForMember(dest => dest.TipoSconto, opt => opt.MapFrom(src => src.Coupon.TipoSconto.ToString()))
                 .ForMember(dest => dest.DataScadenza, opt => opt.MapFrom(src => src.Coupon.DataScadenza));
 
             // Transazione -> RecentActivityDTO
@@ -46,7 +48,6 @@ namespace Fidelity.Server
                 .ForMember(dest => dest.ClienteNome, opt => opt.MapFrom(src => $"{src.Cliente.Nome} {src.Cliente.Cognome}"))
                 .ForMember(dest => dest.PuntoVendita, opt => opt.MapFrom(src => src.PuntoVendita.Nome))
                 .ForMember(dest => dest.Responsabile, opt => opt.MapFrom(src => src.Responsabile != null ? src.Responsabile.Username : "Sistema"));
-
 
             // CouponAssegnato -> RecentActivityDTO
             CreateMap<CouponAssegnato, RecentActivityDTO>()

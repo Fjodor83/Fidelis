@@ -1,5 +1,6 @@
 using AutoMapper;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
+using Fidelity.Domain.Entities;
 using Fidelity.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,7 +45,7 @@ namespace Fidelity.Server.Services
                 throw new UnauthorizedAccessException("Punto vendita non trovato.");
             }
 
-            IQueryable<Shared.Models.Cliente> query = _context.Clienti
+            IQueryable<Cliente> query = _context.Clienti
                 .Include(c => c.PuntoVenditaRegistrazione);
 
             if (userRole != "Admin")

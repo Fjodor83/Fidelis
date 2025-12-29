@@ -17,26 +17,25 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
     public async Task<DashboardStatsDto> Handle(GetDashboardStatsQuery request, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
-        var mesePrecedente = now.AddMonths(-1);
+        var oggi = DateTime.Today;
 
         var stats = new DashboardStatsDto
         {
-            // Clienti stats
             TotaleClienti = await _context.Clienti.CountAsync(cancellationToken),
-            ClientiAttivi = await _context.Clienti.CountAsync(c => c.Attivo, cancellationToken),
-            TotalePuntiDistribuiti = await _context.Clienti.SumAsync(c => c.PuntiTotali, cancellationToken),
+            ClientiRegistratiOggi = await _context.Clienti
+                .CountAsync(c => c.DataRegistrazione >= oggi, cancellationToken),
             
-            // Transazioni del mese
-            TotaleTransazioniMese = await _context.Transazioni
-                .Where(t => t.DataTransazione >= mesePrecedente)
-                .SumAsync(t => t.Importo, cancellationToken),
+            PuntiTotaliEmessi = await _context.Transazioni
+                .SumAsync(t => (int?)t.PuntiAssegnati ?? 0, cancellationToken),
             
-            NumeroTransazioniMese = await _context.Transazioni
-                .CountAsync(t => t.DataTransazione >= mesePrecedente, cancellationToken),
+            CouponAttivi = await _context.Coupons
+                .CountAsync(c => c.Attivo && c.DataScadenza > now, cancellationToken),
             
-            // Coupons attivi
-            CouponsAttivi = await _context.Coupons
-                .CountAsync(c => c.Attivo && c.DataScadenza > now, cancellationToken)
+            CouponRiscattati = await _context.CouponAssegnati
+                .CountAsync(c => c.Utilizzato, cancellationToken),
+            
+            TransazioniOggi = await _context.Transazioni
+                .CountAsync(t => t.DataTransazione >= oggi, cancellationToken)
         };
 
         return stats;

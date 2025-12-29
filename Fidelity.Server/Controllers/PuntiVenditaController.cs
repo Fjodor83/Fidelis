@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 using System.Security.Claims;
 using BCrypt.Net;
 using AutoMapper;
@@ -105,7 +105,7 @@ namespace Fidelity.Server.Controllers
                     Indirizzo = request.Indirizzo,
                     Telefono = request.Telefono,
                     Attivo = request.Attivo,
-                    DataCreazione = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 _context.PuntiVendita.Add(puntoVendita);
@@ -136,7 +136,9 @@ namespace Fidelity.Server.Controllers
                     var link = new ResponsabilePuntoVendita
                     {
                         ResponsabileId = responsabile.Id,
-                        PuntoVenditaId = puntoVendita.Id
+                        PuntoVenditaId = puntoVendita.Id,
+                        DataAssociazione = DateTime.UtcNow,
+                        Principale = true
                     };
 
                     _context.ResponsabilePuntiVendita.Add(link);
@@ -170,7 +172,7 @@ namespace Fidelity.Server.Controllers
                     Telefono = puntoVendita.Telefono,
                     Attivo = puntoVendita.Attivo,
                     NumeroClienti = 0,
-                    DataCreazione = puntoVendita.DataCreazione
+                    DataCreazione = puntoVendita.CreatedAt
                 };
 
                 return CreatedAtAction(nameof(GetById), new { id = puntoVendita.Id }, response);
@@ -223,7 +225,7 @@ namespace Fidelity.Server.Controllers
                     Telefono = puntoVendita.Telefono,
                     Attivo = puntoVendita.Attivo,
                     NumeroClienti = numeroClienti,
-                    DataCreazione = puntoVendita.DataCreazione
+                    DataCreazione = puntoVendita.CreatedAt
                 };
 
                 return Ok(response);

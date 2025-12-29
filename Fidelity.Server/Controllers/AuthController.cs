@@ -1,4 +1,3 @@
-// Fidelity.Server/Controllers/AuthController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,12 +6,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 using BCrypt.Net;
 using Fidelity.Server.Services;
 using Microsoft.AspNetCore.Authorization;
+using MediatR;
+using Fidelity.Application.Clienti.Commands.RegistraCliente;
 
 namespace Fidelity.Server.Controllers
 {
@@ -22,21 +23,18 @@ namespace Fidelity.Server.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ISender _sender;
 
         public AuthController(
             ApplicationDbContext context, 
             IConfiguration configuration,
-            IEmailService emailService,
-            ICardGeneratorService cardGenerator)
+            ISender sender)
         {
             _context = context;
             _configuration = configuration;
-            _emailService = emailService;
-            _cardGenerator = cardGenerator;
+            _sender = sender;
         }
 
-        private readonly IEmailService _emailService;
-        private readonly ICardGeneratorService _cardGenerator;
 
         /// <summary>
         /// Login per responsabili punti vendita e admin
@@ -65,9 +63,9 @@ namespace Fidelity.Server.Controllers
                 }
 
                 // Check if account is locked
-                if (responsabile.AccountLockedUntil.HasValue && responsabile.AccountLockedUntil.Value > DateTime.UtcNow)
+                if (responsabile.IsAccountLocked())
                 {
-                    var remainingMinutes = (int)(responsabile.AccountLockedUntil.Value - DateTime.UtcNow).TotalMinutes;
+                    var remainingMinutes = (int)(responsabile.AccountLockedUntil!.Value - DateTime.UtcNow).TotalMinutes;
                     return Unauthorized(new LoginResponse
                     {
                         Success = false,
@@ -78,23 +76,17 @@ namespace Fidelity.Server.Controllers
                 // Verifica password con BCrypt
                 if (!BCrypt.Net.BCrypt.Verify(request.Password, responsabile.PasswordHash))
                 {
-                    // Increment failed attempts
-                    responsabile.FailedLoginAttempts++;
+                    responsabile.IncrementaLoginFallito();
+                    await _context.SaveChangesAsync();
                     
-                    // Lock account after 5 failed attempts
-                    if (responsabile.FailedLoginAttempts >= 5)
+                    if (responsabile.IsAccountLocked())
                     {
-                        responsabile.AccountLockedUntil = DateTime.UtcNow.AddMinutes(15);
-                        await _context.SaveChangesAsync();
-                        
                         return Unauthorized(new LoginResponse
                         {
                             Success = false,
                             Messaggio = "Troppi tentativi falliti. Account bloccato per 15 minuti."
                         });
                     }
-                    
-                    await _context.SaveChangesAsync();
                     
                     return Unauthorized(new LoginResponse
                     {
@@ -104,11 +96,7 @@ namespace Fidelity.Server.Controllers
                 }
 
                 // Reset failed attempts on successful login
-                responsabile.FailedLoginAttempts = 0;
-                responsabile.AccountLockedUntil = null;
-
-                // Aggiorna ultimo accesso
-                responsabile.UltimoAccesso = DateTime.UtcNow;
+                responsabile.RegistraAccesso(HttpContext.Connection.RemoteIpAddress?.ToString());
                 await _context.SaveChangesAsync();
 
                 // Ottieni il primo punto vendita associato (se esiste)
@@ -247,7 +235,7 @@ namespace Fidelity.Server.Controllers
                 if (responsabile == null)
                     return NotFound(new { success = false, messaggio = "Responsabile non trovato." });
 
-                // Valida che il profilo sia incompleto (NomeCompleto vuoto)
+                // Valida कि il profilo sia incompleto (NomeCompleto vuoto)
                 if (!string.IsNullOrWhiteSpace(responsabile.NomeCompleto))
                     return BadRequest(new { success = false, messaggio = "Profilo già completato." });
 
@@ -299,9 +287,9 @@ namespace Fidelity.Server.Controllers
                 }
 
                 // Check if account is locked
-                if (cliente.AccountLockedUntil.HasValue && cliente.AccountLockedUntil.Value > DateTime.UtcNow)
+                if (cliente.IsAccountLocked())
                 {
-                    var remainingMinutes = (int)(cliente.AccountLockedUntil.Value - DateTime.UtcNow).TotalMinutes;
+                    var remainingMinutes = (int)(cliente.AccountLockedUntil!.Value - DateTime.UtcNow).TotalMinutes;
                     return Unauthorized(new LoginClienteResponse
                     {
                         Success = false,
@@ -312,23 +300,17 @@ namespace Fidelity.Server.Controllers
                 // Verifica password
                 if (!BCrypt.Net.BCrypt.Verify(request.Password, cliente.PasswordHash))
                 {
-                    // Increment failed attempts
-                    cliente.FailedLoginAttempts++;
+                    cliente.IncrementaLoginFallito();
+                    await _context.SaveChangesAsync();
                     
-                    // Lock account after 5 failed attempts
-                    if (cliente.FailedLoginAttempts >= 5)
+                    if (cliente.IsAccountLocked())
                     {
-                        cliente.AccountLockedUntil = DateTime.UtcNow.AddMinutes(15);
-                        await _context.SaveChangesAsync();
-                        
                         return Unauthorized(new LoginClienteResponse
                         {
                             Success = false,
                             Messaggio = "Troppi tentativi falliti. Account bloccato per 15 minuti."
                         });
                     }
-                    
-                    await _context.SaveChangesAsync();
                     
                     return Unauthorized(new LoginClienteResponse
                     {
@@ -338,8 +320,8 @@ namespace Fidelity.Server.Controllers
                 }
 
                 // Reset failed attempts on successful login
-                cliente.FailedLoginAttempts = 0;
-                cliente.AccountLockedUntil = null;
+                cliente.SbloccaAccount();
+                await _context.SaveChangesAsync();
 
                 // Genera JWT Token
                 var (token, jwtId) = GeneraJwtToken(cliente);
@@ -381,114 +363,50 @@ namespace Fidelity.Server.Controllers
 
             try
             {
-                if (request.HasExistingCard)
+                var command = new RegistraClienteCommand
                 {
-                    // === ATTIVAZIONE CARD ESISTENTE ===
-                    if (string.IsNullOrWhiteSpace(request.ExistingFidelityCode))
-                        return BadRequest(new { success = false, messaggio = "Codice Fidelity obbligatorio." });
+                    Nome = request.Nome,
+                    Cognome = request.Cognome,
+                    Email = request.Email,
+                    Password = request.Password,
+                    Telefono = request.Telefono,
+                    PrivacyAccepted = request.PrivacyAccepted,
+                    PuntoVenditaId = request.PuntoVenditaId,
+                    HasExistingCard = request.HasExistingCard,
+                    ExistingFidelityCode = request.ExistingFidelityCode
+                };
 
-                    var cliente = await _context.Clienti
-                        .FirstOrDefaultAsync(c => c.CodiceFidelity == request.ExistingFidelityCode.Trim() && c.Attivo);
+                var result = await _sender.Send(command);
 
-                    if (cliente == null)
-                        return BadRequest(new { success = false, messaggio = "Codice Fidelity non trovato." });
-
-                    // Verifica corrispondenza Email
-                    if (!cliente.Email.Equals(request.Email.Trim(), StringComparison.OrdinalIgnoreCase))
-                         return BadRequest(new { success = false, messaggio = "L'email inserita non corrisponde a quella associata alla card." });
-
-                    // Verifica se già attivo online
-                    if (!string.IsNullOrEmpty(cliente.PasswordHash))
-                        return BadRequest(new { success = false, messaggio = "Utente già registrato. Effettua il login." });
-
-                    // Imposta password
-                    cliente.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-                    cliente.PrivacyAccettata = request.PrivacyAccepted; // Aggiorna consenso privacy
-                    
-                     await _context.SaveChangesAsync();
-                     
-                     // Login automatico
-                     var (token, jwtId) = GeneraJwtToken(cliente);
-                     var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: cliente.Id);
-                     
-                     return Ok(new LoginClienteResponse
-                     {
-                         Success = true,
-                         Token = token,
-                         RefreshToken = refreshToken,
-                         ClienteId = cliente.Id,
-                         Nome = cliente.Nome,
-                         Cognome = cliente.Cognome,
-                         CodiceFidelity = cliente.CodiceFidelity,
-                         PuntiTotali = cliente.PuntiTotali,
-                         Messaggio = "Account attivato con successo!"
-                     });
-                }
-                else
+                if (!result.Succeeded)
                 {
-                    // === NUOVA REGISTRAZIONE ===
-                    var emailEsistente = await _context.Clienti.AnyAsync(c => c.Email == request.Email);
-                    if (emailEsistente)
-                        return BadRequest(new { success = false, messaggio = "Email già registrata." });
-
-                    var nuovoCodice = await GeneraCodiceFidelityUnivocoAsync();
-
-                    var nuovoCliente = new Cliente
-                    {
-                        Nome = request.Nome,
-                        Cognome = request.Cognome,
-                        Email = request.Email,
-                        Telefono = request.Telefono ?? "",
-                        CodiceFidelity = nuovoCodice,
-                        DataRegistrazione = DateTime.UtcNow,
-                        PuntiTotali = 0,
-                        Attivo = true,
-                        PrivacyAccettata = request.PrivacyAccepted,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                        PuntoVenditaRegistrazioneId = request.PuntoVenditaId, // Nullable se online globale
-                        ResponsabileRegistrazioneId = null // Registrato online
-                    };
-                    
-                    // Assegna punto vendita di default se non specificato (es: primo PV) o lascia null se gestito
-                    // Per ora lasciamo null se modello lo permette, altrimenti cerchiamo un default
-                    if (nuovoCliente.PuntoVenditaRegistrazioneId == null)
-                    {
-                        // Fallback: Assegna al primo PV ("Sede Centrale" o simile) se vogliamo forzare
-                        var defaultPv = await _context.PuntiVendita.FirstOrDefaultAsync();
-                        if (defaultPv != null) nuovoCliente.PuntoVenditaRegistrazioneId = defaultPv.Id;
-                    }
-
-                    _context.Clienti.Add(nuovoCliente);
-                    await _context.SaveChangesAsync();
-
-                    try 
-                    {
-                        // Invia Welcome Email + Card (opzionale se fallisce non bloccare tutto)
-                        // Per generare card serve caricare PuntoVendita
-                        var pv = await _context.PuntiVendita.FindAsync(nuovoCliente.PuntoVenditaRegistrazioneId);
-                        
-                        var cardDigitale = await _cardGenerator.GeneraCardDigitaleAsync(nuovoCliente, pv);
-                        await _emailService.InviaEmailBenvenutoAsync(nuovoCliente.Email, nuovoCliente.Nome, nuovoCliente.CodiceFidelity, cardDigitale);
-                    }
-                    catch {} // Ignora errori email per non bloccare registrazione
-
-                    // Login automatico
-                    var (token, jwtId) = GeneraJwtToken(nuovoCliente);
-                    var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: nuovoCliente.Id);
-                    
-                    return Ok(new LoginClienteResponse
-                    {
-                        Success = true,
-                        Token = token,
-                        RefreshToken = refreshToken,
-                        ClienteId = nuovoCliente.Id,
-                        Nome = nuovoCliente.Nome,
-                        Cognome = nuovoCliente.Cognome,
-                        CodiceFidelity = nuovoCliente.CodiceFidelity,
-                        PuntiTotali = 0,
-                        Messaggio = "Benvenuto in Fidelis!"
-                    });
+                    return BadRequest(new { success = false, messaggio = string.Join(", ", result.Errors) });
                 }
+
+                // Recupera il cliente dal database per generare il token
+                var cliente = await _context.Clienti.FindAsync(result.Data.ClienteId);
+                
+                if (cliente == null)
+                {
+                    return StatusCode(500, new { success = false, messaggio = "Errore durante il recupero del cliente dopo la registrazione." });
+                }
+
+                // Genera JWT Token
+                var (token, jwtId) = GeneraJwtToken(cliente);
+                var refreshToken = await GeneraRefreshTokenAsync(jwtId, clienteId: cliente.Id);
+
+                return Ok(new LoginClienteResponse
+                {
+                    Success = true,
+                    Token = token,
+                    RefreshToken = refreshToken,
+                    ClienteId = cliente.Id,
+                    Nome = cliente.Nome,
+                    Cognome = cliente.Cognome,
+                    CodiceFidelity = cliente.CodiceFidelity,
+                    PuntiTotali = cliente.PuntiTotali,
+                    Messaggio = request.HasExistingCard ? "Account attivato con successo!" : "Benvenuto in Fidelis!"
+                });
             }
             catch (Exception ex)
             {
@@ -496,19 +414,6 @@ namespace Fidelity.Server.Controllers
             }
         }
         
-        private async Task<string> GeneraCodiceFidelityUnivocoAsync()
-        {
-            string codice;
-            bool esiste;
-            do
-            {
-                var numero = new Random().Next(100000000, 999999999);
-                codice = $"SUN{numero}";
-                esiste = await _context.Clienti.AnyAsync(c => c.CodiceFidelity == codice);
-            }
-            while (esiste);
-            return codice;
-        }
         
         // ===== REFRESH TOKEN METHODS =====
         
@@ -663,7 +568,6 @@ namespace Fidelity.Server.Controllers
             return (new JwtSecurityTokenHandler().WriteToken(token), jwtId);
         }
     }
-}
 
-// DTO for Refresh Token Request
-public record RefreshTokenRequest(string RefreshToken);
+    public record RefreshTokenRequest(string RefreshToken);
+}

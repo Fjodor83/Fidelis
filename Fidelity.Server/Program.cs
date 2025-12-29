@@ -1,7 +1,7 @@
-﻿using Fidelity.Server.Data;
-using Fidelity.Server.Services;
+﻿using Fidelity.Server.Services;
 using Fidelity.Server.Middleware;
 using Fidelity.Server.Repositories;
+using Fidelity.Infrastructure.Persistence;
 using Fidelity.Application.Common.Interfaces;
 using Fidelity.Application.Clienti.Commands.RegistraCliente;
 using FluentValidation;
@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Serilog;
+using Fidelity.Infrastructure;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -36,19 +37,10 @@ try
     }
     builder.Configuration.AddEnvironmentVariables();
 
-    // Add services to the container.
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
     // OLD DbContext (will be phased out)
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
 
-    // NEW Clean Architecture DbContext
-    builder.Services.AddDbContext<Fidelity.Infrastructure.Persistence.ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
-    builder.Services.AddScoped<IApplicationDbContext>(provider =>
-        provider.GetRequiredService<Fidelity.Infrastructure.Persistence.ApplicationDbContext>());
+    // Infrastructure Services (Registering JWT, CurrentUser, and CA DbContext)
+    builder.Services.AddInfrastructure(builder.Configuration);
 
     builder.Services.AddControllersWithViews();
     builder.Services.AddHealthChecks()
@@ -63,15 +55,8 @@ try
     });
     builder.Services.AddValidatorsFromAssembly(typeof(RegistraClienteCommandValidator).Assembly);
 
-    // Infrastructure Services
-    builder.Services.AddScoped<Fidelity.Application.Common.Interfaces.IJwtService, Fidelity.Infrastructure.Services.JwtService>();
-
     // Services Registration (Legacy + V2)
-    // Email Services - Registrazione corretta per evitare errori di DI
-    builder.Services.AddScoped<Fidelity.Server.Services.EmailService>(); // Registra la classe concreta
-    builder.Services.AddScoped<Fidelity.Server.Services.IEmailService>(provider =>
-        provider.GetRequiredService<Fidelity.Server.Services.EmailService>()); // Interfaccia Server
-    builder.Services.AddScoped<Fidelity.Application.Common.Interfaces.IEmailService, Fidelity.Server.Services.EmailServiceAdapter>(); // Adapter per Application
+    builder.Services.AddScoped<Fidelity.Application.Common.Interfaces.IEmailService, EmailService>();
 
     builder.Services.AddScoped<ICardGeneratorService, CardGeneratorService>();
     builder.Services.AddAutoMapper(typeof(Program));
@@ -148,13 +133,11 @@ try
         var services = scope.ServiceProvider;
         try
         {
-            var context = services.GetRequiredService<ApplicationDbContext>();
+            var context = services.GetRequiredService<Fidelity.Infrastructure.Persistence.ApplicationDbContext>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
 
-            // Applica migrations automaticamente
-            await context.Database.MigrateAsync();
-
-            // Seed data
-            await DatabaseSeeder.SeedAsync(context);
+            // Seed data using the new CA Seeder
+            await Fidelity.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(context, logger);
 
             Console.WriteLine("✓ Database initialized successfully!");
         }

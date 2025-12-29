@@ -29,8 +29,8 @@ public class GetTransazioniClienteQueryHandler : IRequestHandler<GetTransazioniC
                 ResponsabileId = t.ResponsabileId,
                ResponsabileNome = null,
                 DataTransazione = t.DataTransazione,
-                Importo = t.Importo,
-                PuntiGuadagnati = t.PuntiGuadagnati,
+                Importo = t.ImportoSpesa,
+                PuntiGuadagnati = t.PuntiAssegnati,
                 Note = t.Note
             })
             .ToListAsync(cancellationToken);

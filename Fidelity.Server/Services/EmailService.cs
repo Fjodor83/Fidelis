@@ -1,20 +1,16 @@
-﻿// Fidelity.Server/Services/EmailService.cs
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Fidelity.Shared.DTOs;
 using MailKit.Net.Smtp;
 using MimeKit;
-using Fidelity.Shared.Models;
-using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
 using MailKit.Security;
-using MailKit;  // <-- AGGIUNTO: per ProtocolLogger
+using MailKit; 
+using Fidelity.Application.Common.Interfaces;
 
 namespace Fidelity.Server.Services
 {
-    public class EmailService : IEmailService
+    public class EmailService : Application.Common.Interfaces.IEmailService
     {
         private readonly IConfiguration _configuration;
 
@@ -23,13 +19,13 @@ namespace Fidelity.Server.Services
             _configuration = configuration;
         }
 
-        public async Task<(bool Success, string ErrorMessage)> InviaEmailVerificaAsync(string email, string nomeCliente, string token, string linkRegistrazione, string nomePuntoVendita)
+        public async Task<(bool Success, string? Error)> InviaEmailVerificaAsync(string email, string nome, string token, string linkRegistrazione, string puntoVenditaNome)
         {
             try
             {
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Suns - Zero&Company", _configuration["Email:From"]));
-                message.To.Add(new MailboxAddress(nomeCliente, email));
+                message.To.Add(new MailboxAddress(nome, email));
                 message.Subject = "🎁 Completa la tua registrazione Suns Fidelity Card";
 
                 var bodyBuilder = new BodyBuilder
@@ -60,7 +56,7 @@ namespace Fidelity.Server.Services
                             </div>
                             <div class='content'>
                                 <h2>Ciao! 👋</h2>
-                                <p>Sei stato registrato presso il nostro punto vendita <strong>{nomePuntoVendita}</strong>.</p>
+                                <p>Sei stato registrato presso il nostro punto vendita <strong>{puntoVenditaNome}</strong>.</p>
                                 <p>Per completare la tua registrazione e ricevere la tua Suns Fidelity Card digitale, clicca sul pulsante qui sotto:</p>
                                 
                                 <div style='text-align: center; margin: 20px 0;'>
@@ -131,7 +127,7 @@ namespace Fidelity.Server.Services
             }
         }
 
-        public async Task<(bool Success, string ErrorMessage)> InviaEmailBenvenutoAsync(string email, string nome, string codiceFidelity, byte[] cardDigitale)
+        public async Task<bool> InviaEmailBenvenutoAsync(string email, string nome, string codiceFidelity, byte[]? cardDigitale = null)
         {
             try
             {
@@ -228,23 +224,24 @@ namespace Fidelity.Server.Services
                 Console.WriteLine($"[EmailService] Welcome email sent successfully to {email}");
                 await client.DisconnectAsync(true);
 
-                return (true, string.Empty);
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore invio email benvenuto: {ex.Message}");
-                return (false, ex.Message);
+                return false;
             }
         }
 
-        public async Task<(bool Success, string ErrorMessage)> InviaEmailPuntiGuadagnatiAsync(string email, string nome, int puntiGuadagnati, int nuovoSaldo, string nomePuntoVendita)
+        public async Task<bool> InviaEmailPuntiAssegnatiAsync(string email, string nome, int puntiAssegnati, int puntiTotali, decimal importoSpesa)
         {
             try
             {
+                var nomePuntoVendita = "Suns Store"; 
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Suns - Zero&Company", _configuration["Email:From"]));
                 message.To.Add(new MailboxAddress(nome, email));
-                message.Subject = $"🌟 Hai guadagnato {puntiGuadagnati} punti!";
+                message.Subject = $"🌟 Hai guadagnato {puntiAssegnati} punti!";
 
                 var bodyBuilder = new BodyBuilder
                 {
@@ -274,12 +271,12 @@ namespace Fidelity.Server.Services
                                 
                                 <div class='points-box'>
                                     <p style='margin: 0;'>Hai guadagnato:</p>
-                                    <div class='points'>+{puntiGuadagnati} Punti</div>
+                                    <div class='points'>+{puntiAssegnati} Punti</div>
                                 </div>
 
                                 <p style='text-align: center; font-size: 18px;'>
                                     Il tuo nuovo saldo totale è:<br>
-                                    <strong>{nuovoSaldo} Punti</strong>
+                                    <strong>{puntiTotali} Punti</strong>
                                 </p>
 
                                 <p>Continua così per sbloccare premi esclusivi!</p>
@@ -307,16 +304,16 @@ namespace Fidelity.Server.Services
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                return (true, string.Empty);
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore invio email punti: {ex.Message}");
-                return (false, ex.Message);
+                return false;
             }
         }
 
-        public async Task<(bool Success, string ErrorMessage)> InviaEmailNuovoCouponAsync(string email, string nome, string titoloCoupon, string codiceCoupon, DateTime dataScadenza)
+        public async Task<bool> InviaEmailNuovoCouponAsync(string email, string nome, string titoloCoupon, string codiceCoupon, DateTime dataScadenza)
         {
             try
             {
@@ -402,12 +399,24 @@ namespace Fidelity.Server.Services
                     await client.DisconnectAsync(true);
                 }
 
-                return (true, string.Empty);
+                return true;
             }
             catch (Exception ex)
             {
-                return (false, ex.Message);
+                return false;
             }
+        }
+
+        public async Task<bool> InviaEmailLivelloRaggiuntoAsync(string email, string nome, string nuovoLivello)
+        {
+            // TODO: Implementare template per livello raggiunto
+            return true;
+        }
+
+        public async Task<bool> InviaEmailResetPasswordAsync(string email, string nome, string resetToken, string resetLink)
+        {
+            // TODO: Implementare template per reset password
+            return true;
         }
     }
 }

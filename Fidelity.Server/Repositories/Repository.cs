@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
 
 namespace Fidelity.Server.Repositories;
 

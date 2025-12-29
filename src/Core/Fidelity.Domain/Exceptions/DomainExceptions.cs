@@ -24,12 +24,14 @@ public class ValidationException : DomainException
     public ValidationException(string message) : base(message)
     {
     }
-    
+
     public Dictionary<string, string[]> Errors { get; } = new();
-    
+
     public ValidationException(Dictionary<string, string[]> errors)
         : base("One or more validation failures occurred.")
     {
         Errors = errors;
     }
 }
+
+

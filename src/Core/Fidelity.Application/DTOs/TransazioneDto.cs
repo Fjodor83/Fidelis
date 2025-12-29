@@ -1,16 +1,28 @@
 namespace Fidelity.Application.DTOs;
 
-public class TransazioneDto
+/// <summary>
+/// Transazione DTOs
+/// </summary>
+
+public record TransazioneDto
 {
-    public int Id { get; set; }
-    public int ClienteId { get; set; }
-    public string ClienteNome { get; set; } = string.Empty;
-    public int PuntoVenditaId { get; set; }
-    public string PuntoVenditaNome { get; set; } = string.Empty;
-    public int? ResponsabileId { get; set; }
-    public string? ResponsabileNome { get; set; }
-    public DateTime DataTransazione { get; set; }
-    public decimal Importo { get; set; }
-    public int PuntiGuadagnati { get; set; }
-    public string? Note { get; set; }
+    public int Id { get; init; }
+    public int ClienteId { get; init; }
+    public string ClienteNome { get; init; } = string.Empty;
+    public int? PuntoVenditaId { get; init; }
+    public string? PuntoVenditaNome { get; init; }
+    public int? ResponsabileId { get; init; }
+    public string? ResponsabileNome { get; init; }
+    public DateTime DataTransazione { get; init; }
+    public decimal Importo { get; init; }
+    public int PuntiGuadagnati { get; init; }
+    public string Tipo { get; init; } = "Accumulo";
+    public string? Note { get; init; }
+}
+
+public record TransazioneDetailDto : TransazioneDto
+{
+    public int ClienteId { get; init; }
+    public string ClienteNome { get; init; } = string.Empty;
+    public string? ResponsabileNome { get; init; }
 }

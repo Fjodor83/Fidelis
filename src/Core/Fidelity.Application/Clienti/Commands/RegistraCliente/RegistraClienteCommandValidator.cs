@@ -6,28 +6,40 @@ public class RegistraClienteCommandValidator : AbstractValidator<RegistraCliente
 {
     public RegistraClienteCommandValidator()
     {
-        RuleFor(v => v.Nome)
-            .NotEmpty().WithMessage("Nome è obbligatorio")
-            .MaximumLength(100).WithMessage("Nome non può superare 100 caratteri");
+        When(x => !x.HasExistingCard, () =>
+        {
+            RuleFor(x => x.Nome)
+                .NotEmpty().WithMessage("Il nome è obbligatorio")
+                .MaximumLength(100).WithMessage("Il nome non può superare i 100 caratteri");
 
-        RuleFor(v => v.Cognome)
-            .NotEmpty().WithMessage("Cognome è obbligatorio")
-            .MaximumLength(100).WithMessage("Cognome non può superare 100 caratteri");
+            RuleFor(x => x.Cognome)
+                .NotEmpty().WithMessage("Il cognome è obbligatorio")
+                .MaximumLength(100).WithMessage("Il cognome non può superare i 100 caratteri");
+        });
 
-        RuleFor(v => v.Email)
-            .NotEmpty().WithMessage("Email è obbligatoria")
-            .EmailAddress().WithMessage("Email non valida")
-            .MaximumLength(255).WithMessage("Email non può superare 255 caratteri");
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("L'email è obbligatoria")
+            .EmailAddress().WithMessage("Formato email non valido")
+            .MaximumLength(255).WithMessage("L'email non può superare i 255 caratteri");
 
-        RuleFor(v => v.Password)
-            .NotEmpty().WithMessage("Password è obbligatoria")
-            .MinimumLength(6).WithMessage("Password deve essere almeno 6 caratteri");
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("La password è obbligatoria")
+            .MinimumLength(6).WithMessage("La password deve avere almeno 6 caratteri")
+            .MaximumLength(100).WithMessage("La password non può superare i 100 caratteri");
 
-        RuleFor(v => v.PrivacyAccepted)
-            .Equal(true).WithMessage("Devi accettare la privacy policy");
+        RuleFor(x => x.Telefono)
+            .MaximumLength(20).WithMessage("Il telefono non può superare i 20 caratteri")
+            .When(x => !string.IsNullOrEmpty(x.Telefono));
 
-        RuleFor(v => v.Telefono)
-            .MaximumLength(20).WithMessage("Telefono non può superare 20 caratteri")
-            .When(v => !string.IsNullOrEmpty(v.Telefono));
+        RuleFor(x => x.PrivacyAccepted)
+            .Equal(true).WithMessage("Devi accettare la privacy policy per procedere");
+
+        When(x => x.HasExistingCard, () =>
+        {
+            RuleFor(x => x.ExistingFidelityCode)
+                .NotEmpty().WithMessage("Il codice fidelity è obbligatorio per attivare una card esistente")
+                .Length(12).WithMessage("Il codice fidelity deve essere di 12 caratteri")
+                .Matches("^SUN[0-9]{9}$").WithMessage("Formato codice fidelity non valido");
+        });
     }
 }

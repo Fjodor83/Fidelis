@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
 using Fidelity.Shared.DTOs;
-using Fidelity.Shared.Models;
+using Fidelity.Domain.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 
@@ -100,7 +100,9 @@ namespace Fidelity.Server.Controllers
                     var link = new ResponsabilePuntoVendita
                     {
                         ResponsabileId = responsabile.Id,
-                        PuntoVenditaId = pvId
+                        PuntoVenditaId = pvId,
+                        DataAssociazione = DateTime.UtcNow,
+                        Principale = request.PuntiVenditaIds.IndexOf(pvId) == 0 // Assume primo come principale
                     };
                     _context.ResponsabilePuntiVendita.Add(link);
                 }
@@ -183,7 +185,9 @@ namespace Fidelity.Server.Controllers
                     var link = new ResponsabilePuntoVendita
                     {
                         ResponsabileId = responsabile.Id,
-                        PuntoVenditaId = pvId
+                        PuntoVenditaId = pvId,
+                        DataAssociazione = DateTime.UtcNow,
+                        Principale = request.PuntiVenditaIds.IndexOf(pvId) == 0
                     };
                     _context.ResponsabilePuntiVendita.Add(link);
                 }

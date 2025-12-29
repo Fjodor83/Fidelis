@@ -1,5 +1,6 @@
 using AutoMapper;
-using Fidelity.Server.Data;
+using Fidelity.Infrastructure.Persistence;
+using Fidelity.Domain.Entities;
 using Fidelity.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;

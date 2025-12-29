@@ -37,8 +37,8 @@ public class RegistraTransazioneCommandHandler : IRequestHandler<RegistraTransaz
             PuntoVenditaId = request.PuntoVenditaId,
             ResponsabileId = request.ResponsabileId,
             DataTransazione = DateTime.UtcNow,
-            Importo = request.Importo,
-            PuntiGuadagnati = puntiGuadagnati,
+            ImportoSpesa = request.Importo,
+            PuntiAssegnati = puntiGuadagnati,
             Note = request.Note
         };
         
@@ -52,10 +52,11 @@ public class RegistraTransazioneCommandHandler : IRequestHandler<RegistraTransaz
             return Result<int>.Failure(ex.Message);
         }
         
-        // Update cliente points using domain method
-        cliente.AggiungiPunti(puntiGuadagnati);
-        
         _context.Transazioni.Add(transazione);
+        await _context.SaveChangesAsync(cancellationToken);
+        
+        // Update cliente points using domain method
+        cliente.AggiungiPunti(puntiGuadagnati, transazione.Id);
         await _context.SaveChangesAsync(cancellationToken);
         
         return Result<int>.Success(transazione.Id);
