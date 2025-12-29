@@ -49,7 +49,9 @@ namespace Fidelity.Shared.DTOs
 
         public bool PrivacyAccepted { get; set; }
         
+        
         // Optional: auto-detect store if registering from a specific link, otherwise default
+        [Required(ErrorMessage = "Seleziona il tuo punto vendita preferito")]
         public int? PuntoVenditaId { get; set; }
     }
 }

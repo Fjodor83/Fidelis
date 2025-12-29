@@ -36,12 +36,6 @@ public class RegistraClienteCommandHandler : IRequestHandler<RegistraClienteComm
     {
         try
         {
-            // FASE 1: Validazione Esistenza Email
-            if (await _context.Clienti.AnyAsync(c => c.Email == request.Email, cancellationToken))
-            {
-                return Result<RegistraClienteResponse>.Failure("Email già registrata nel sistema");
-            }
-
             Cliente? cliente = null;
 
             // FASE 2: Verifica Carta Esistente (se fornita)
@@ -50,11 +44,17 @@ public class RegistraClienteCommandHandler : IRequestHandler<RegistraClienteComm
                 cliente = await AttivaCardEsistente(request, cancellationToken);
                 if (cliente == null)
                 {
-                    return Result<RegistraClienteResponse>.Failure("Codice fedeltà non trovato o già attivato");
+                    return Result<RegistraClienteResponse>.Failure("Codice fedeltà non trovato o dati non corrispondenti");
                 }
             }
             else
             {
+                // FASE 1: Validazione Esistenza Email (Solo per nuovi utenti)
+                if (await _context.Clienti.AnyAsync(c => c.Email == request.Email, cancellationToken))
+                {
+                    return Result<RegistraClienteResponse>.Failure("Email già registrata nel sistema");
+                }
+
                 // FASE 3: Crea Nuovo Cliente
                 cliente = await CreaNuovoCliente(request, cancellationToken);
             }

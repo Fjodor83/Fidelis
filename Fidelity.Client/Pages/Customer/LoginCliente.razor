@@ -27,13 +27,13 @@
                     <DataAnnotationsValidator />
 
                     <div class="form-floating mb-3">
-                        <InputText id="emailOrCode" class="form-control" @bind-Value="item.EmailOrCode" placeholder="Email o Codice Fidelity" />
+                        <InputText id="emailOrCode" class="form-control" @bind-Value="item.EmailOrCode" placeholder=" " />
                         <label for="emailOrCode">Email o Codice Fidelity</label>
                         <ValidationMessage For="@(() => item.EmailOrCode)" />
                     </div>
 
                     <div class="form-floating mb-4">
-                        <InputText type="password" id="password" class="form-control" @bind-Value="item.Password" placeholder="Password" />
+                        <InputText type="password" id="password" class="form-control" @bind-Value="item.Password" placeholder=" " />
                         <label for="password">Password</label>
                         <ValidationMessage For="@(() => item.Password)" />
                     </div>

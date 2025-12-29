@@ -48,6 +48,34 @@ namespace Fidelity.Server.Controllers
         }
 
         /// <summary>
+        /// Ottieni lista pubblica punti vendita (per registrazione)
+        /// </summary>
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<object>>> GetPublicList()
+        {
+            try
+            {
+                var puntiVendita = await _context.PuntiVendita
+                    .Where(p => p.Attivo)
+                    .OrderBy(p => p.Nome)
+                    .Select(p => new 
+                    {
+                        p.Id,
+                        p.Nome,
+                        p.Citta
+                    })
+                    .ToListAsync();
+
+                return Ok(puntiVendita);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { messaggio = "Errore durante il caricamento dei punti vendita.", errore = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Ottieni dettagli di un punto vendita specifico
         /// </summary>
         [HttpGet("{id}")]

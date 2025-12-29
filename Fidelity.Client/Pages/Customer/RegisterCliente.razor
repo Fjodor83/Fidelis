@@ -44,8 +44,8 @@
                             <i class="bi bi-info-circle me-1"></i> Inserisci il codice della tua card fisica per attivare il profilo online.
                         </div>
                         <div class="form-floating mb-3">
-                            <InputText id="fidelityCode" class="form-control" @bind-Value="item.ExistingFidelityCode" placeholder="Codice Fidelity (es. SUN...)" />
-                            <label for="fidelityCode">Codice Fidelity</label>
+                            <InputText id="fidelityCode" class="form-control" @bind-Value="item.ExistingFidelityCode" placeholder=" " />
+                            <label for="fidelityCode">Codice Fidelity (es. SUN...)</label>
                             <ValidationMessage For="@(() => item.ExistingFidelityCode)" />
                         </div>
                     }
@@ -59,39 +59,54 @@
                     <div class="row g-2 mb-3">
                         <div class="col">
                             <div class="form-floating">
-                                <InputText id="nome" class="form-control" @bind-Value="item.Nome" placeholder="Nome" />
+                                <InputText id="nome" class="form-control" @bind-Value="item.Nome" placeholder=" " />
                                 <label for="nome">Nome</label>
                                 <ValidationMessage For="@(() => item.Nome)" />
                             </div>
                         </div>
                         <div class="col">
                             <div class="form-floating">
-                                <InputText id="cognome" class="form-control" @bind-Value="item.Cognome" placeholder="Cognome" />
+                                <InputText id="cognome" class="form-control" @bind-Value="item.Cognome" placeholder=" " />
                                 <label for="cognome">Cognome</label>
                                 <ValidationMessage For="@(() => item.Cognome)" />
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="form-floating mb-3">
+                        <InputSelect id="puntoVendita" class="form-select" @bind-Value="item.PuntoVenditaId">
+                            <option value="">Seleziona un punto vendita...</option>
+                            @if (puntiVendita != null)
+                            {
+                                @foreach (var pv in puntiVendita)
+                                {
+                                    <option value="@pv.Id">@pv.Nome (@pv.Citta)</option>
+                                }
+                            }
+                        </InputSelect>
+                        <label for="puntoVendita">Punto Vendita Preferito</label>
+                        <ValidationMessage For="@(() => item.PuntoVenditaId)" />
+                    </div>
 
                     <div class="form-floating mb-3">
-                        <InputText type="email" id="email" class="form-control" @bind-Value="item.Email" placeholder="Email" />
+                        <InputText type="email" id="email" class="form-control" @bind-Value="item.Email" placeholder=" " />
                         <label for="email">Email</label>
                         <ValidationMessage For="@(() => item.Email)" />
                     </div>
 
                     <div class="form-floating mb-3">
-                        <InputText id="telefono" class="form-control" @bind-Value="item.Telefono" placeholder="Telefono" />
+                        <InputText id="telefono" class="form-control" @bind-Value="item.Telefono" placeholder=" " />
                         <label for="telefono">Telefono (opzionale)</label>
                     </div>
 
                     <div class="form-floating mb-3">
-                        <InputText type="password" id="password" class="form-control" @bind-Value="item.Password" placeholder="Password" />
+                        <InputText type="password" id="password" class="form-control" @bind-Value="item.Password" placeholder=" " />
                         <label for="password">Password (min 6 caratteri)</label>
                         <ValidationMessage For="@(() => item.Password)" />
                     </div>
 
                     <div class="form-floating mb-4">
-                        <InputText type="password" id="confirmPassword" class="form-control" @bind-Value="item.ConfirmPassword" placeholder="Conferma Password" />
+                        <InputText type="password" id="confirmPassword" class="form-control" @bind-Value="item.ConfirmPassword" placeholder=" " />
                         <label for="confirmPassword">Conferma Password</label>
                         <ValidationMessage For="@(() => item.ConfirmPassword)" />
                     </div>
@@ -148,8 +163,28 @@
 
 @code {
     private RegisterClienteRequest item = new();
+    private List<PuntoVenditaSimpleDto> puntiVendita = new();
     private bool isBusy = false;
     private string errorMessage = "";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            puntiVendita = await Http.GetFromJsonAsync<List<PuntoVenditaSimpleDto>>("api/PuntiVendita/public") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento punti vendita: {ex.Message}");
+        }
+    }
+
+    public class PuntoVenditaSimpleDto
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; }
+        public string Citta { get; set; }
+    }
 
     private void ToggleMode(bool hasCard)
     {

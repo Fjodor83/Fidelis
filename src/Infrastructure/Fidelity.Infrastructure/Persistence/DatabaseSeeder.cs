@@ -22,7 +22,7 @@ public static class DatabaseSeeder
             {
                 var puntoVendita = new PuntoVendita
                 {
-                    Codice = "PV001",
+                    Codice = "NE01",
                     Nome = "Sede Centrale Suns",
                     Indirizzo = "Via Roma, 1",
                     Citta = "Milano",
