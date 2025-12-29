@@ -27,7 +27,12 @@ public class GetClienteQueryHandler :
             .Include(c => c.CouponAssegnati.Where(ca => !ca.Utilizzato))
                 .ThenInclude(ca => ca.Coupon)
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.ClienteId && !c.IsDeleted, cancellationToken);
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => 
+                c.Id == request.ClienteId && 
+                !c.IsDeleted &&
+                (!request.PuntoVenditaId.HasValue || c.PuntoVenditaRegistrazioneId == request.PuntoVenditaId.Value)
+            , cancellationToken);
 
         if (cliente == null)
             return Result<ClienteDetailDto>.Failure("Cliente non trovato.");
@@ -69,6 +74,7 @@ public class GetClienteQueryHandler :
             Livello = cliente.Livello.ToString(),
             Attivo = cliente.Attivo,
             PuntoVenditaRegistrazione = cliente.PuntoVenditaRegistrazione?.Nome,
+            PuntoVenditaCodice = cliente.PuntoVenditaRegistrazione?.Codice,
             UltimeTransazioni = cliente.Transazioni.Select(t => new TransazioneDto
             {
                 Id = t.Id,

@@ -7,4 +7,5 @@ public record GetClientiQuery : IRequest<List<ClienteDto>>
 {
     public bool? SoloAttivi { get; init; }
     public string? SearchTerm { get; init; }
+    public int? PuntoVenditaId { get; init; }
 }

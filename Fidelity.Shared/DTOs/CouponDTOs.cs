@@ -13,6 +13,9 @@ namespace Fidelity.Shared.DTOs
         public DateTime DataInizio { get; set; }
         public DateTime DataScadenza { get; set; }
         public bool Attivo { get; set; }
+        public decimal? ImportoMinimoOrdine { get; set; }
+        public int? LimiteUtilizzoGlobale { get; set; }
+        public int UtilizziTotali { get; set; }
     }
 
     public class CouponRequest
@@ -37,6 +40,10 @@ namespace Fidelity.Shared.DTOs
         public DateTime DataScadenza { get; set; } = DateTime.UtcNow.AddDays(30);
 
         public bool Attivo { get; set; } = true;
+
+        public decimal? ImportoMinimoOrdine { get; set; }
+        public int? LimiteUtilizzoPerCliente { get; set; }
+        public int? LimiteUtilizzoGlobale { get; set; }
     }
 
     public class AssegnaCouponRequest

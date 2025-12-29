@@ -9,6 +9,7 @@ public record TransazioneDto
     public int Id { get; init; }
     public int ClienteId { get; init; }
     public string ClienteNome { get; init; } = string.Empty;
+    public string CodiceFidelity { get; init; } = string.Empty;
     public int? PuntoVenditaId { get; init; }
     public string? PuntoVenditaNome { get; init; }
     public int? ResponsabileId { get; init; }

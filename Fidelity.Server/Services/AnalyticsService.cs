@@ -73,7 +73,7 @@ namespace Fidelity.Server.Services
                 }
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(2));
 
                 _cache.Set(cacheKey, result, cacheEntryOptions);
             }

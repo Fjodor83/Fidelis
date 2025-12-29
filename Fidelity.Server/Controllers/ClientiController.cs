@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Fidelity.Shared.DTOs;
 using System.Security.Claims;
-using Fidelity.Server.Services;
+using MediatR;
+using AutoMapper;
+using Fidelity.Application.Clienti.Queries.GetClienti;
+using Fidelity.Application.Clienti.Queries.GetCliente;
+using Fidelity.Application.DTOs;
 
 namespace Fidelity.Server.Controllers
 {
@@ -11,11 +15,13 @@ namespace Fidelity.Server.Controllers
     [Authorize]
     public class ClientiController : ControllerBase
     {
-        private readonly IClienteService _clienteService;
+        private readonly ISender _sender;
+        private readonly IMapper _mapper;
 
-        public ClientiController(IClienteService clienteService)
+        public ClientiController(ISender sender, IMapper mapper)
         {
-            _clienteService = clienteService;
+            _sender = sender;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -28,12 +34,16 @@ namespace Fidelity.Server.Controllers
             {
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
                 int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
-                var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
+                var isStoreUser = User.IsInRole("Responsabile") || User.IsInRole("Operatore");
 
-                var result = await _clienteService.CercaClientiAsync(query, ruolo, puntoVenditaId);
-                return Ok(result);
+                var result = await _sender.Send(new GetClientiQuery 
+                { 
+                    SearchTerm = query, 
+                    PuntoVenditaId = isStoreUser ? puntoVenditaId : null 
+                });
+                
+                return Ok(_mapper.Map<List<ClienteResponse>>(result));
             }
-            catch (ArgumentException ex) { return BadRequest(new { messaggio = ex.Message }); }
             catch (Exception ex)
             {
                 return StatusCode(500, new { messaggio = "Errore durante la ricerca del cliente.", errore = ex.Message });
@@ -50,12 +60,16 @@ namespace Fidelity.Server.Controllers
             {
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
                 int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
-                var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
-
-                var result = await _clienteService.GetClientiByPuntoVenditaAsync(ruolo, puntoVenditaId);
-                return Ok(result);
+                var isStoreUser = User.IsInRole("Responsabile") || User.IsInRole("Operatore");
+                
+                var result = await _sender.Send(new GetClientiQuery 
+                { 
+                    PuntoVenditaId = isStoreUser ? puntoVenditaId : null,
+                    SoloAttivi = true
+                });
+                
+                return Ok(_mapper.Map<List<ClienteResponse>>(result));
             }
-            catch (UnauthorizedAccessException ex) { return BadRequest(new { messaggio = ex.Message }); }
             catch (Exception ex)
             {
                 return StatusCode(500, new { messaggio = "Errore durante il caricamento dei clienti.", errore = ex.Message });
@@ -72,12 +86,19 @@ namespace Fidelity.Server.Controllers
             {
                 var puntoVenditaIdClaim = User.FindFirst("PuntoVenditaId")?.Value;
                 int? puntoVenditaId = string.IsNullOrEmpty(puntoVenditaIdClaim) ? null : int.Parse(puntoVenditaIdClaim);
-                var ruolo = User.FindFirst(ClaimTypes.Role)?.Value;
+                var isStoreUser = User.IsInRole("Responsabile") || User.IsInRole("Operatore");
 
-                var cliente = await _clienteService.GetClienteByIdAsync(id, ruolo, puntoVenditaId);
-                if (cliente == null) return NotFound(new { messaggio = "Cliente non trovato." });
+                var query = new GetClienteQuery 
+                { 
+                    ClienteId = id,
+                    PuntoVenditaId = isStoreUser ? puntoVenditaId : null
+                };
+
+                var result = await _sender.Send(query);
                 
-                return Ok(cliente);
+                if (!result.Succeeded) return NotFound(new { messaggio = result.Errors.FirstOrDefault() ?? "Cliente non trovato" });
+                
+                return Ok(_mapper.Map<ClienteResponse>(result.Data));
             }
             catch (Exception ex)
             {

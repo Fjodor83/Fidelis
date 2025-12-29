@@ -59,9 +59,6 @@ try
 
     builder.Services.AddAutoMapper(typeof(Program));
     builder.Services.AddMemoryCache();
-    builder.Services.AddScoped<ITransazioneService, TransazioneService>();
-    builder.Services.AddScoped<ICouponService, CouponService>();
-    builder.Services.AddScoped<IClienteService, ClienteService>();
     builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 

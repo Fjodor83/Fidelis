@@ -24,6 +24,11 @@ public class GetClientiQueryHandler : IRequestHandler<GetClientiQuery, List<Clie
             query = query.Where(c => c.Attivo);
         }
 
+        if (request.PuntoVenditaId.HasValue)
+        {
+            query = query.Where(c => c.PuntoVenditaRegistrazioneId == request.PuntoVenditaId.Value);
+        }
+
         // Search filter
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -48,7 +53,9 @@ public class GetClientiQueryHandler : IRequestHandler<GetClientiQuery, List<Clie
                 Telefono = c.Telefono,
                 DataRegistrazione = c.DataRegistrazione,
                 PuntiTotali = c.PuntiTotali,
-                Attivo = c.Attivo
+                Attivo = c.Attivo,
+                PuntoVenditaRegistrazione = c.PuntoVenditaRegistrazione != null ? c.PuntoVenditaRegistrazione.Nome : null,
+                PuntoVenditaCodice = c.PuntoVenditaRegistrazione != null ? c.PuntoVenditaRegistrazione.Codice : null
             })
             .ToListAsync(cancellationToken);
 

@@ -18,6 +18,8 @@ public record ClienteDto
     public string Livello { get; init; } = "Bronze";
     public bool Attivo { get; init; }
     public DateTime DataRegistrazione { get; init; }
+    public string? PuntoVenditaRegistrazione { get; init; }
+    public string? PuntoVenditaCodice { get; init; }
 }
 
 public record ClienteDetailDto : ClienteDto

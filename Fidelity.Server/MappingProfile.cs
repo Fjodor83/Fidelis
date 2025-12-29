@@ -68,6 +68,25 @@ namespace Fidelity.Server
             // Responsabile -> ResponsabileDetailResponse
             CreateMap<Responsabile, ResponsabileDetailResponse>()
                 .ForMember(dest => dest.PuntiVendita, opt => opt.MapFrom(src => src.ResponsabilePuntiVendita.Select(rp => rp.PuntoVendita)));
+
+            // Application DTOs -> Shared DTOs
+            CreateMap<Fidelity.Application.DTOs.ClienteDto, ClienteResponse>();
+
+            CreateMap<Fidelity.Application.DTOs.ClienteDetailDto, ClienteResponse>();
+
+            // TransazioneDto -> TransazioneResponse
+            CreateMap<Fidelity.Application.DTOs.TransazioneDto, TransazioneResponse>()
+                 .ForMember(dest => dest.ImportoSpesa, opt => opt.MapFrom(src => src.Importo))
+                 .ForMember(dest => dest.PuntiAssegnati, opt => opt.MapFrom(src => src.PuntiGuadagnati))
+                 .ForMember(dest => dest.TipoTransazione, opt => opt.MapFrom(src => src.Tipo));
+
+            // ClienteDetailDto -> ClienteDettaglioResponse
+            CreateMap<Fidelity.Application.DTOs.ClienteDetailDto, ClienteDettaglioResponse>()
+                .ForMember(dest => dest.UltimeTransazioni, opt => opt.MapFrom(src => src.UltimeTransazioni)); // Map List<TransazioneDto> -> List<TransazioneResponse> implicitly
+
+            // Coupon DTOs (Application -> Shared)
+            CreateMap<Fidelity.Application.DTOs.CouponDto, CouponDTO>();
+            CreateMap<Fidelity.Application.DTOs.CouponAssegnatoDto, CouponAssegnatoDTO>();
         }
     }
 }

@@ -3,7 +3,9 @@ using MediatR;
 
 namespace Fidelity.Application.Transazioni.Commands.RegistraTransazione;
 
-public record RegistraTransazioneCommand : IRequest<Result<int>>
+using Fidelity.Application.DTOs;
+
+public record RegistraTransazioneCommand : IRequest<Result<TransazioneDto>>
 {
     public int ClienteId { get; init; }
     public int PuntoVenditaId { get; init; }
