@@ -8,7 +8,7 @@ using MailKit.Security;
 using MailKit; 
 using Fidelity.Application.Common.Interfaces;
 
-namespace Fidelity.Server.Services
+namespace Fidelity.Infrastructure.Services
 {
     public class EmailService : Application.Common.Interfaces.IEmailService
     {

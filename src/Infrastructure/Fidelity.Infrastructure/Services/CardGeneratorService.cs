@@ -3,7 +3,7 @@ using QRCoder;
 using Fidelity.Application.Common.Interfaces;
 using Fidelity.Domain.Entities;
 
-namespace Fidelity.Server.Services;
+namespace Fidelity.Infrastructure.Services;
 
 public class CardGeneratorService : ICardGeneratorService
 {

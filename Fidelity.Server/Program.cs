@@ -56,9 +56,7 @@ try
     builder.Services.AddValidatorsFromAssembly(typeof(RegistraClienteCommandValidator).Assembly);
 
     // Services Registration (Legacy + V2)
-    builder.Services.AddScoped<Fidelity.Application.Common.Interfaces.IEmailService, EmailService>();
 
-    builder.Services.AddScoped<ICardGeneratorService, CardGeneratorService>();
     builder.Services.AddAutoMapper(typeof(Program));
     builder.Services.AddMemoryCache();
     builder.Services.AddScoped<ITransazioneService, TransazioneService>();

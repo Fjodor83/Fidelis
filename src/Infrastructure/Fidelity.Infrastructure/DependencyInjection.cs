@@ -36,6 +36,8 @@ public static class DependencyInjection
         // Services
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<ICardGeneratorService, CardGeneratorService>();
 
         // HttpContextAccessor for CurrentUserService
         services.AddHttpContextAccessor();
