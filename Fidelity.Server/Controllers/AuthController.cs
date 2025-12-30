@@ -137,44 +137,7 @@ namespace Fidelity.Server.Controllers
             }
         }
 
-        /// <summary>
-        /// Cambia password per responsabile autenticato
-        /// </summary>
-        [HttpPost("cambia-password")]
-        [Authorize]
-        public async Task<IActionResult> CambiaPassword([FromBody] CambiaPasswordRequest request)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            try
-            {
-                var responsabileId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-                var responsabile = await _context.Responsabili.FindAsync(responsabileId);
-
-                if (responsabile == null)
-                    return NotFound(new { success = false, messaggio = "Responsabile non trovato." });
-
-                // Verifica password attuale
-                if (!BCrypt.Net.BCrypt.Verify(request.PasswordAttuale, responsabile.PasswordHash))
-                {
-                    return BadRequest(new { success = false, messaggio = "Password attuale non corretta." });
-                }
-
-                // Hash nuova password
-                responsabile.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NuovaPassword);
-                responsabile.RichiestaResetPassword = false;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { success = true, messaggio = "Password cambiata con successo." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Errore durante il cambio password");
-                return StatusCode(500, new { success = false, messaggio = "Errore durante il cambio password." });
-            }
-        }
 
         /// <summary>
         /// Cambia password per cliente autenticato
@@ -517,7 +480,7 @@ namespace Fidelity.Server.Controllers
 
         private (string token, string jwtId) GeneraJwtToken(Responsabile responsabile, int? puntoVenditaId)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            var securityKey = GetSecurityKey();
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             
             var jwtId = Guid.NewGuid().ToString();
@@ -528,7 +491,9 @@ namespace Fidelity.Server.Controllers
                 new Claim(ClaimTypes.NameIdentifier, responsabile.Id.ToString()),
                 new Claim(ClaimTypes.Name, responsabile.Username),
                 new Claim(ClaimTypes.Role, responsabile.Ruolo),
-                new Claim("NomeCompleto", responsabile.NomeCompleto ?? "")
+                new Claim("NomeCompleto", responsabile.NomeCompleto ?? ""),
+                new Claim("richiestaResetPassword", responsabile.RichiestaResetPassword ? "true" : "false"),
+                new Claim("profiloIncompleto", string.IsNullOrWhiteSpace(responsabile.NomeCompleto) ? "true" : "false")
             };
 
             if (puntoVenditaId.HasValue)
@@ -549,7 +514,7 @@ namespace Fidelity.Server.Controllers
 
         private (string token, string jwtId) GeneraJwtToken(Cliente cliente)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            var securityKey = GetSecurityKey();
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             
             var jwtId = Guid.NewGuid().ToString();
@@ -573,6 +538,16 @@ namespace Fidelity.Server.Controllers
             );
 
             return (new JwtSecurityTokenHandler().WriteToken(token), jwtId);
+        }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S6781:JWT secret keys should not be disclosed", Justification = "Key is retrieved from IConfiguration abstraction, which supports secure sources like Environment Variables and Key Vault.")]
+        private SymmetricSecurityKey GetSecurityKey()
+        {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(key) || key.Length < 32)
+            {
+                throw new InvalidOperationException("JWT Key must be configured and at least 32 characters long.");
+            }
+            return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         }
     }
 

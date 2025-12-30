@@ -166,7 +166,7 @@
     public string Token { get; set; }
 
     private string tokenManuale = "";
-    private CompletaRegistrazioneRequest request = new();
+    private readonly CompletaRegistrazioneRequest request = new();
     private bool isValidating = true;
     private bool tokenValido = false;
     private bool isLoading = false;
@@ -195,7 +195,7 @@
 
         try
         {
-            var response = await Http.GetAsync($"api/registrazione/valida-token/{Token}");
+            var response = await Http.GetAsync($"api/registrazione/valida-token/{Uri.EscapeDataString(Token)}");
             
             if (response.IsSuccessStatusCode)
             {

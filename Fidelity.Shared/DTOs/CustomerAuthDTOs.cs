@@ -25,7 +25,7 @@ namespace Fidelity.Shared.DTOs
         public int PuntiTotali { get; set; }
     }
 
-    public class RegisterClienteRequest
+    public class RegisterClienteRequest : IValidatableObject
     {
         // Step 1: Identification (New or Existing)
         public bool HasExistingCard { get; set; }
@@ -51,7 +51,15 @@ namespace Fidelity.Shared.DTOs
         
         
         // Optional: auto-detect store if registering from a specific link, otherwise default
-        [Required(ErrorMessage = "Seleziona il tuo punto vendita preferito")]
+        // Required only if creating a NEW card (HasExistingCard == false)
         public int? PuntoVenditaId { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (!HasExistingCard && PuntoVenditaId == null)
+            {
+                yield return new ValidationResult("Seleziona il tuo punto vendita preferito", new[] { nameof(PuntoVenditaId) });
+            }
+        }
     }
 }

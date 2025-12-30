@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11304.174 d18.0
+VisualStudioVersion = 18.1.11304.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Client", "Fidelity.Client\Fidelity.Client.csproj", "{B78597A0-F30C-4B9B-AB29-0EEC0E5B8963}"
 EndProject
@@ -20,6 +20,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{9048EB7F-3875-A59E-E36B-5BD4C6F2A282}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelity.Infrastructure", "src\Infrastructure\Fidelity.Infrastructure\Fidelity.Infrastructure.csproj", "{1E227D84-6870-49CD-8F18-0C66887DA0E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fidelis.Tests", "tests\Fidelis.Tests\Fidelis.Tests.csproj", "{A5EA1933-831D-4FF5-903D-34B47673B18F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +107,18 @@ Global
 		{1E227D84-6870-49CD-8F18-0C66887DA0E1}.Release|x64.Build.0 = Release|Any CPU
 		{1E227D84-6870-49CD-8F18-0C66887DA0E1}.Release|x86.ActiveCfg = Release|Any CPU
 		{1E227D84-6870-49CD-8F18-0C66887DA0E1}.Release|x86.Build.0 = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Debug|x86.Build.0 = Debug|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|x64.Build.0 = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A5EA1933-831D-4FF5-903D-34B47673B18F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,6 +129,7 @@ Global
 		{A9F6DA64-F198-49B4-9C18-BA9CC484A03D} = {8D626EA8-CB54-BC41-363A-217881BEBA6E}
 		{9048EB7F-3875-A59E-E36B-5BD4C6F2A282} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1E227D84-6870-49CD-8F18-0C66887DA0E1} = {9048EB7F-3875-A59E-E36B-5BD4C6F2A282}
+		{A5EA1933-831D-4FF5-903D-34B47673B18F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DD83E9C4-8CB9-4FB2-912E-19AF70BE4573}

@@ -73,20 +73,23 @@
                         </div>
                     </div>
                     
-                    <div class="form-floating mb-3">
-                        <InputSelect id="puntoVendita" class="form-select" @bind-Value="item.PuntoVenditaId">
-                            <option value="">Seleziona un punto vendita...</option>
-                            @if (puntiVendita != null)
-                            {
-                                @foreach (var pv in puntiVendita)
+                    @if (!item.HasExistingCard)
+                    {
+                        <div class="form-floating mb-3">
+                            <InputSelect id="puntoVendita" class="form-select" @bind-Value="item.PuntoVenditaId">
+                                <option value="">Seleziona un punto vendita...</option>
+                                @if (puntiVendita != null)
                                 {
-                                    <option value="@pv.Id">@pv.Nome (@pv.Citta)</option>
+                                    @foreach (var pv in puntiVendita)
+                                    {
+                                        <option value="@pv.Id">@pv.Nome (@pv.Citta)</option>
+                                    }
                                 }
-                            }
-                        </InputSelect>
-                        <label for="puntoVendita">Punto Vendita Preferito</label>
-                        <ValidationMessage For="@(() => item.PuntoVenditaId)" />
-                    </div>
+                            </InputSelect>
+                            <label for="puntoVendita">Punto Vendita Preferito</label>
+                            <ValidationMessage For="@(() => item.PuntoVenditaId)" />
+                        </div>
+                    }
 
                     <div class="form-floating mb-3">
                         <InputText type="email" id="email" class="form-control" @bind-Value="item.Email" placeholder=" " />
@@ -162,7 +165,7 @@
 </style>
 
 @code {
-    private RegisterClienteRequest item = new();
+    private readonly RegisterClienteRequest item = new();
     private List<PuntoVenditaSimpleDto> puntiVendita = new();
     private bool isBusy = false;
     private string errorMessage = "";

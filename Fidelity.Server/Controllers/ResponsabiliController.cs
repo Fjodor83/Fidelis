@@ -12,7 +12,7 @@ namespace Fidelity.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [Authorize] // Allow authenticated users (Admin + Responsabile)
     public class ResponsabiliController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -28,8 +28,10 @@ namespace Fidelity.Server.Controllers
         /// Ottieni tutti i responsabili con i loro punti vendita
         /// </summary>
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<List<ResponsabileDetailResponse>>> GetAll()
         {
+            // ... (keep implementation)
             try
             {
                 var responsabili = await _context.Responsabili
@@ -50,6 +52,7 @@ namespace Fidelity.Server.Controllers
         /// Crea un nuovo responsabile
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ResponsabileDetailResponse>> Create([FromBody] ResponsabileRequest request)
         {
             if (!ModelState.IsValid)
@@ -57,15 +60,65 @@ namespace Fidelity.Server.Controllers
 
             try
             {
-                // Verifica username univoco
-                var existingUsername = await _context.Responsabili
-                    .AnyAsync(r => r.Username == request.Username);
+                // Verifica username esistente (inclusi eliminati)
+                var existingUser = await _context.Responsabili
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(r => r.Username == request.Username);
 
-                if (existingUsername)
-                    return BadRequest(new { messaggio = $"Username '{request.Username}' già esistente." });
+                if (existingUser != null)
+                {
+                    if (!existingUser.IsDeleted)
+                    {
+                         return BadRequest(new { messaggio = $"Username '{request.Username}' già esistente." });
+                    }
+                    
+                    // Restore logic if deleted
+                    // Verify email constraint first (if email is different from old one)
+                     var existingEmailCheck = await _context.Responsabili
+                        .IgnoreQueryFilters()
+                        .AnyAsync(r => r.Email == request.Email && r.Id != existingUser.Id); // Check other users
+
+                    if (existingEmailCheck)
+                        return BadRequest(new { messaggio = $"Email '{request.Email}' già utilizzata da un altro utente." });
+
+                    existingUser.Restore();
+                    existingUser.NomeCompleto = request.NomeCompleto;
+                    existingUser.Email = request.Email;
+                    existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password ?? "Suns2024!");
+                    existingUser.Attivo = request.Attivo;
+                    existingUser.RichiestaResetPassword = request.RichiestaResetPassword;
+                    existingUser.UpdatedAt = DateTime.UtcNow;
+
+                    // Update stores
+                    // Remove old links
+                     var oldLinks = await _context.ResponsabilePuntiVendita.Where(rp => rp.ResponsabileId == existingUser.Id).ToListAsync();
+                    _context.ResponsabilePuntiVendita.RemoveRange(oldLinks);
+                    
+                    // Add new links
+                    foreach (var pvId in request.PuntiVenditaIds)
+                    {
+                        _context.ResponsabilePuntiVendita.Add(new ResponsabilePuntoVendita
+                        {
+                            ResponsabileId = existingUser.Id,
+                            PuntoVenditaId = pvId,
+                            DataAssociazione = DateTime.UtcNow,
+                            Principale = request.PuntiVenditaIds.IndexOf(pvId) == 0
+                        });
+                    }
+
+                    await _context.SaveChangesAsync();
+                     var restored = await _context.Responsabili
+                        .Include(r => r.ResponsabilePuntiVendita)
+                            .ThenInclude(rp => rp.PuntoVendita)
+                        .FirstAsync(r => r.Id == existingUser.Id);
+
+                    var responseRestored = _mapper.Map<ResponsabileDetailResponse>(restored);
+                    return CreatedAtAction(nameof(GetAll), new { id = responseRestored.Id }, responseRestored);
+                }
 
                 // Verifica email univoca
                 var existingEmail = await _context.Responsabili
+                    .IgnoreQueryFilters()
                     .AnyAsync(r => r.Email == request.Email);
 
                 if (existingEmail)
@@ -131,6 +184,7 @@ namespace Fidelity.Server.Controllers
         /// Aggiorna un responsabile esistente
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ResponsabileDetailResponse>> Update(int id, [FromBody] ResponsabileRequest request)
         {
             if (!ModelState.IsValid)
@@ -151,6 +205,7 @@ namespace Fidelity.Server.Controllers
 
                 // Verifica email univoca (escluso il corrente)
                 var existingEmail = await _context.Responsabili
+                    .IgnoreQueryFilters()
                     .AnyAsync(r => r.Email == request.Email && r.Id != id);
 
                 if (existingEmail)
@@ -216,6 +271,7 @@ namespace Fidelity.Server.Controllers
         /// Elimina un responsabile
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -245,6 +301,42 @@ namespace Fidelity.Server.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { messaggio = "Errore durante l'eliminazione del responsabile.", errore = ex.Message });
+            }
+        }
+        /// <summary>
+        /// Cambia password per responsabile autenticato
+        /// </summary>
+        [HttpPost("cambia-password")]
+        public async Task<IActionResult> CambiaPassword([FromBody] CambiaPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var responsabileId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var responsabile = await _context.Responsabili.FindAsync(responsabileId);
+
+                if (responsabile == null)
+                    return NotFound(new { success = false, messaggio = "Responsabile non trovato." });
+
+                // Verifica password attuale
+                if (!BCrypt.Net.BCrypt.Verify(request.PasswordAttuale, responsabile.PasswordHash))
+                {
+                    return BadRequest(new { success = false, messaggio = "Password attuale non corretta." });
+                }
+
+                // Hash nuova password
+                responsabile.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NuovaPassword);
+                responsabile.RichiestaResetPassword = false;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, messaggio = "Password cambiata con successo." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, messaggio = "Errore durante il cambio password.", errore = ex.Message });
             }
         }
     }

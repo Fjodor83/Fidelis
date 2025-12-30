@@ -162,13 +162,13 @@
         }
     }
 
-    private string FormatCode(string code)
+    private static string FormatCode(string code)
     {
         if (string.IsNullOrEmpty(code)) return "";
         return code;
     }
 
-    private int CalculateProgress(int points)
+    private static int CalculateProgress(int points)
     {
         if (points >= 1000) return 100;
         return (int)((points / 1000.0) * 100);

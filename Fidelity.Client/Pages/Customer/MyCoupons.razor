@@ -150,7 +150,7 @@
         }
     }
 
-    private bool IsScaduto(CouponAssegnatoDTO c)
+    private static bool IsScaduto(CouponAssegnatoDTO c)
     {
         return !c.Utilizzato && c.DataScadenza < DateTime.UtcNow;
     }

@@ -421,7 +421,7 @@
         catch (Exception ex)
         {
             messaggioErrore = "Errore durante la ricerca del cliente.";
-            Console.Error.WriteLine($"Error searching client: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error searching client: {ex.Message}");
         }
         finally
         {
@@ -471,7 +471,7 @@
         catch (Exception ex)
         {
             messaggioErroreAssegnazione = "Errore di connessione.";
-            Console.Error.WriteLine($"Error assigning points: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error assigning points: {ex.Message}");
         }
         finally
         {
@@ -529,7 +529,7 @@
         catch (Exception ex)
         {
             erroreCoupon = "Errore di connessione.";
-            Console.Error.WriteLine($"Error redeeming coupon: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error redeeming coupon: {ex.Message}");
         }
         finally
         {
@@ -570,7 +570,7 @@
         catch (Exception ex)
         {
             erroreCoupon = "Errore di connessione.";
-            Console.Error.WriteLine($"Error assigning coupon: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error assigning coupon: {ex.Message}");
         }
         finally
         {
@@ -580,7 +580,7 @@
 
     private void TornaDashboard()
     {
-        Navigation.NavigateTo(ruolo == "Admin" ? "/dashboard" : "/dashboard");
+        Navigation.NavigateTo("/dashboard");
     }
 
     private async Task<string> GetNomeCompletoAsync()

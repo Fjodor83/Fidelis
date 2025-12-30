@@ -41,11 +41,40 @@ public class RegistraClienteCommandHandler : IRequestHandler<RegistraClienteComm
             // FASE 2: Verifica Carta Esistente (se fornita)
             if (!string.IsNullOrEmpty(request.ExistingFidelityCode))
             {
-                cliente = await AttivaCardEsistente(request, cancellationToken);
-                if (cliente == null)
+                var existingCliente = await _context.Clienti
+                    .FirstOrDefaultAsync(c => 
+                        c.CodiceFidelity == request.ExistingFidelityCode && 
+                        c.Attivo, 
+                        cancellationToken);
+
+                if (existingCliente == null)
                 {
-                    return Result<RegistraClienteResponse>.Failure("Codice fedeltà non trovato o dati non corrispondenti");
+                    return Result<RegistraClienteResponse>.Failure($"Card {request.ExistingFidelityCode} non trovata o non attiva.");
                 }
+
+                if (!string.IsNullOrEmpty(existingCliente.PasswordHash))
+                {
+                    return Result<RegistraClienteResponse>.Failure("Questa Card risulta già registrata online. Effettua il Login.");
+                }
+
+                // Verifica corrispondenza email
+                if (!existingCliente.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("Tentativo attivazione Card {Code} fallito: Email {RequestEmail} diversa da {DbEmail}", 
+                        request.ExistingFidelityCode, request.Email, existingCliente.Email);
+                    return Result<RegistraClienteResponse>.Failure("L'email inserita non corrisponde a quella associata alla Card.");
+                }
+
+                // Completa attivazione
+                existingCliente.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                existingCliente.PrivacyAccettata = request.PrivacyAccepted;
+                existingCliente.Telefono = request.Telefono;
+                existingCliente.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Card {Code} attivata online per {Email}", existingCliente.CodiceFidelity, existingCliente.Email);
+                
+                cliente = existingCliente;
             }
             else
             {
@@ -83,40 +112,7 @@ public class RegistraClienteCommandHandler : IRequestHandler<RegistraClienteComm
         }
     }
 
-    private async Task<Cliente?> AttivaCardEsistente(
-        RegistraClienteCommand request, 
-        CancellationToken cancellationToken)
-    {
-        var cliente = await _context.Clienti
-            .FirstOrDefaultAsync(c => 
-                c.CodiceFidelity == request.ExistingFidelityCode && 
-                c.Attivo, 
-                cancellationToken);
 
-        if (cliente == null || !string.IsNullOrEmpty(cliente.PasswordHash))
-        {
-            return null; // Card non trovata o già attivata online
-        }
-
-        // Verifica corrispondenza email (opzionale, basata sulla logica di business fornita)
-        if (!cliente.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
-        {
-            _logger.LogWarning("Tentativo di attivazione carta {Code} con email non corrispondente", request.ExistingFidelityCode);
-            return null;
-        }
-
-        // Completa l'attivazione
-        cliente.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-        cliente.PrivacyAccettata = request.PrivacyAccepted;
-        cliente.Telefono = request.Telefono;
-        cliente.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync(cancellationToken);
-        
-        _logger.LogInformation("Carta fedeltà {Code} attivata online per cliente {Email}", cliente.CodiceFidelity, cliente.Email);
-
-        return cliente;
-    }
 
     private async Task<Cliente> CreaNuovoCliente(
         RegistraClienteCommand request, 

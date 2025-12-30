@@ -25,7 +25,7 @@ public class JwtService : IJwtService
     public async Task<(string Token, string RefreshToken)> GenerateTokensAsync(int userId, string role, CancellationToken cancellationToken = default)
     {
         var jwtId = Guid.NewGuid().ToString();
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var securityKey = GetSecurityKey();
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -91,7 +91,7 @@ public class JwtService : IJwtService
     public (string Token, string JwtId) GenerateToken(Cliente cliente)
     {
         var jwtId = Guid.NewGuid().ToString();
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var securityKey = GetSecurityKey();
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -120,7 +120,7 @@ public class JwtService : IJwtService
     public (string Token, string JwtId) GenerateToken(Responsabile responsabile, int? puntoVenditaId = null)
     {
         var jwtId = Guid.NewGuid().ToString();
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var securityKey = GetSecurityKey();
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -158,12 +158,12 @@ public class JwtService : IJwtService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+            var securityKey = GetSecurityKey();
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
+                IssuerSigningKey = securityKey,
                 ValidateIssuer = true,
                 ValidIssuer = _configuration["Jwt:Issuer"],
                 ValidateAudience = true,
@@ -192,5 +192,15 @@ public class JwtService : IJwtService
         {
             return null;
         }
+    }
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S6781:JWT secret keys should not be disclosed", Justification = "Key is retrieved from IConfiguration abstraction, which supports secure sources like Environment Variables and Key Vault.")]
+    private SymmetricSecurityKey GetSecurityKey()
+    {
+        var key = _configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(key) || key.Length < 32)
+        {
+            throw new InvalidOperationException("JWT Key must be configured and at least 32 characters long.");
+        }
+        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
     }
 }

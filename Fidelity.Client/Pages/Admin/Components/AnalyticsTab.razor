@@ -174,14 +174,14 @@
         }
     }
 
-    private string FormatNumber(int num)
+    private static string FormatNumber(int num)
     {
         if (num >= 1000)
             return (num / 1000.0).ToString("0.k");
         return num.ToString();
     }
 
-    private string GetTimeAgo(DateTime data)
+    private static string GetTimeAgo(DateTime data)
     {
         var span = DateTime.UtcNow - data;
         if (span.TotalMinutes < 1) return "adesso";

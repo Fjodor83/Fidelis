@@ -28,9 +28,10 @@ public class SecurityHeadersMiddleware
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-            "img-src 'self' data: https://cdn.jsdelivr.net https://api.qrserver.com; " +
+            "img-src 'self' data: https://cdn.jsdelivr.net; " +
             "font-src 'self' data: https://cdn.jsdelivr.net; " +
             "connect-src 'self' https://cdn.jsdelivr.net; " +
+            "object-src 'none'; " +
             "frame-ancestors 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'");

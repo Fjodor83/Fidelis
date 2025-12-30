@@ -110,19 +110,99 @@ namespace Fidelity.Server.Controllers
 
             try
             {
-                // Verifica che il codice non esista già
-                if (await _context.PuntiVendita.AnyAsync(pv => pv.Codice == request.Codice))
+                // Check if code exists (including deleted)
+                var existingPV = await _context.PuntiVendita
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(pv => pv.Codice == request.Codice);
+
+                if (existingPV != null)
                 {
-                    return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
+                    if (!existingPV.IsDeleted)
+                    {
+                        return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
+                    }
+
+                    // Restore logic
+                    existingPV.Restore();
+                    existingPV.Nome = request.Nome;
+                    existingPV.Citta = request.Citta;
+                    existingPV.Indirizzo = request.Indirizzo;
+                    existingPV.Telefono = request.Telefono;
+                    existingPV.Attivo = request.Attivo;
+                    existingPV.UpdatedAt = DateTime.UtcNow;
+
+                    await _context.SaveChangesAsync();
+
+                    // Check if associated Manager exists
+                    var responsabileUsername = "RE" + request.Codice.Substring(2);
+                    var existingManager = await _context.Responsabili
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(r => r.Username == responsabileUsername);
+
+                    if (existingManager != null)
+                    {
+                        if (existingManager.IsDeleted)
+                        {
+                            existingManager.Restore();
+                            existingManager.Email = $"responsabile.{responsabileUsername.ToLower()}@sunscompany.com";
+                            existingManager.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Suns2024!");
+                            existingManager.RichiestaResetPassword = true;
+                            existingManager.Attivo = true;
+                        }
+                        
+                        // Ensure Link
+                        var existingLink = await _context.ResponsabilePuntiVendita
+                            .FirstOrDefaultAsync(rp => rp.ResponsabileId == existingManager.Id && rp.PuntoVenditaId == existingPV.Id);
+
+                        if (existingLink == null)
+                        {
+                            _context.ResponsabilePuntiVendita.Add(new ResponsabilePuntoVendita
+                            {
+                                ResponsabileId = existingManager.Id,
+                                PuntoVenditaId = existingPV.Id,
+                                DataAssociazione = DateTime.UtcNow,
+                                Principale = true
+                            });
+                        }
+                        
+                        await _context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                         // Create new manager if not exists (same logic as new creation)
+                        var responsabile = new Responsabile
+                        {
+                            Username = responsabileUsername,
+                            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Suns2024!"),
+                            NomeCompleto = "",
+                            Email = $"responsabile.{responsabileUsername.ToLower()}@sunscompany.com",
+                            Ruolo = "Responsabile",
+                            Attivo = true,
+                            RichiestaResetPassword = true
+                        };
+                        _context.Responsabili.Add(responsabile);
+                        await _context.SaveChangesAsync();
+
+                        _context.ResponsabilePuntiVendita.Add(new ResponsabilePuntoVendita
+                        {
+                            ResponsabileId = responsabile.Id,
+                            PuntoVenditaId = existingPV.Id,
+                            DataAssociazione = DateTime.UtcNow,
+                            Principale = true
+                        });
+                        await _context.SaveChangesAsync();
+                    }
+
+                    return Ok(_mapper.Map<PuntoVenditaResponse>(existingPV));
                 }
 
-                // Genera username per il responsabile (es: NE03 -> RE03)
-                var responsabileUsername = "RE" + request.Codice.Substring(2);
+                // Genera username per il responsabile
+                var responsabileUsernameNew = "RE" + request.Codice.Substring(2);
 
-                // Verifica che il responsabile con questo username non esista già
-                if (await _context.Responsabili.AnyAsync(r => r.Username == responsabileUsername))
+                // Check manager conflict if PV didn't exist
+                if (await _context.Responsabili.IgnoreQueryFilters().AnyAsync(r => r.Username == responsabileUsernameNew && !r.IsDeleted))
                 {
-                    return BadRequest(new { messaggio = $"Esiste già un responsabile con username '{responsabileUsername}'. Impossibile creare il punto vendita." });
+                    return BadRequest(new { messaggio = $"Esiste già un responsabile con username '{responsabileUsernameNew}'. Impossibile creare il punto vendita." });
                 }
 
                 var puntoVendita = new PuntoVendita
@@ -139,28 +219,43 @@ namespace Fidelity.Server.Controllers
                 _context.PuntiVendita.Add(puntoVendita);
                 await _context.SaveChangesAsync();
 
-                // Crea automaticamente il responsabile associato
-                try
+                // Handle Manager Creation/Restoration for New PV
+                 var existingManagerForNewPV = await _context.Responsabili
+                        .IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(r => r.Username == responsabileUsernameNew);
+                
+                if (existingManagerForNewPV != null && existingManagerForNewPV.IsDeleted)
+                {
+                     existingManagerForNewPV.Restore();
+                     existingManagerForNewPV.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Suns2024!");
+                     existingManagerForNewPV.RichiestaResetPassword = true;
+                     await _context.SaveChangesAsync();
+
+                     _context.ResponsabilePuntiVendita.Add(new ResponsabilePuntoVendita
+                     {
+                         ResponsabileId = existingManagerForNewPV.Id,
+                         PuntoVenditaId = puntoVendita.Id,
+                         DataAssociazione = DateTime.UtcNow,
+                         Principale = true
+                     });
+                     await _context.SaveChangesAsync();
+                }
+                else
                 {
                     var responsabile = new Responsabile
                     {
-                        Username = responsabileUsername,
+                        Username = responsabileUsernameNew,
                         PasswordHash = BCrypt.Net.BCrypt.HashPassword("Suns2024!"),
-                        NomeCompleto = "", // Empty string instead of null (will be filled during profile completion)
-                        Email = $"responsabile.{responsabileUsername.ToLower()}@sunscompany.com",
+                        NomeCompleto = "", 
+                        Email = $"responsabile.{responsabileUsernameNew.ToLower()}@sunscompany.com",
                         Ruolo = "Responsabile",
                         Attivo = true,
-                        RichiestaResetPassword = true // Forza cambio password al primo accesso
+                        RichiestaResetPassword = true 
                     };
 
-                    Console.WriteLine($"[DEBUG] Creating responsabile: {responsabile.Username}, Email: {responsabile.Email}");
-                    
                     _context.Responsabili.Add(responsabile);
                     await _context.SaveChangesAsync();
 
-                    Console.WriteLine($"[DEBUG] Responsabile created with ID: {responsabile.Id}");
-
-                    // Crea l'associazione nella junction table
                     var link = new ResponsabilePuntoVendita
                     {
                         ResponsabileId = responsabile.Id,
@@ -171,23 +266,6 @@ namespace Fidelity.Server.Controllers
 
                     _context.ResponsabilePuntiVendita.Add(link);
                     await _context.SaveChangesAsync();
-
-                    Console.WriteLine($"[PuntiVenditaController] Punto vendita '{puntoVendita.Codice}' creato con responsabile '{responsabile.Username}'");
-                }
-                catch (Exception exResp)
-                {
-                    Console.WriteLine($"[ERROR] Failed to create responsabile: {exResp.Message}");
-                    Console.WriteLine($"[ERROR] Stack trace: {exResp.StackTrace}");
-                    if (exResp.InnerException != null)
-                    {
-                        Console.WriteLine($"[ERROR] Inner exception: {exResp.InnerException.Message}");
-                    }
-                    
-                    // Rollback - remove punto vendita
-                    _context.PuntiVendita.Remove(puntoVendita);
-                    await _context.SaveChangesAsync();
-                    
-                    return StatusCode(500, new { messaggio = "Errore durante la creazione del responsabile.", errore = exResp.Message });
                 }
 
                 var response = new PuntoVenditaResponse
@@ -227,7 +305,7 @@ namespace Fidelity.Server.Controllers
                     return NotFound(new { messaggio = "Punto vendita non trovato." });
 
                 // Verifica che il nuovo codice non esista già (escludendo il punto vendita corrente)
-                if (await _context.PuntiVendita.AnyAsync(pv => pv.Codice == request.Codice && pv.Id != id))
+                if (await _context.PuntiVendita.IgnoreQueryFilters().AnyAsync(pv => pv.Codice == request.Codice && pv.Id != id))
                 {
                     return BadRequest(new { messaggio = $"Esiste già un punto vendita con codice '{request.Codice}'." });
                 }
