@@ -20,10 +20,24 @@ namespace Fidelity.Server.Controllers.V2;
 public class ClientiController : ApiControllerBase
 {
     private readonly ILogger<ClientiController> _logger;
+    private readonly Fidelity.Application.Common.Interfaces.ICardGeneratorService _cardGenerator;
 
-    public ClientiController(ILogger<ClientiController> logger)
+    public ClientiController(ILogger<ClientiController> logger, Fidelity.Application.Common.Interfaces.ICardGeneratorService cardGenerator)
     {
         _logger = logger;
+        _cardGenerator = cardGenerator;
+    }
+
+    /// <summary>
+    /// Genera QR Code per codice fidelity
+    /// </summary>
+    [HttpGet("qrcode/{codiceFidelity}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetQrCode(string codiceFidelity, int dimensione = 200)
+    {
+        var qrBytes = await _cardGenerator.GeneraQRCodeAsync(codiceFidelity, dimensione);
+        return File(qrBytes, "image/png");
     }
 
     /// <summary>
