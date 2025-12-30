@@ -23,7 +23,4 @@ public record TransazioneDto
 
 public record TransazioneDetailDto : TransazioneDto
 {
-    public int ClienteId { get; init; }
-    public string ClienteNome { get; init; } = string.Empty;
-    public string? ResponsabileNome { get; init; }
 }

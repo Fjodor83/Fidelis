@@ -327,6 +327,28 @@ namespace Fidelity.Infrastructure.Migrations
                     b.ToTable("CouponAssegnati", (string)null);
                 });
 
+            modelBuilder.Entity("Fidelity.Domain.Entities.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IdempotencyRecords");
+                });
+
             modelBuilder.Entity("Fidelity.Domain.Entities.PuntoVendita", b =>
                 {
                     b.Property<int>("Id")
@@ -768,14 +790,12 @@ namespace Fidelity.Infrastructure.Migrations
                     b.HasOne("Fidelity.Domain.Entities.Cliente", "Cliente")
                         .WithMany("CouponAssegnati")
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Fidelity.Domain.Entities.Coupon", "Coupon")
                         .WithMany("CouponAssegnati")
                         .HasForeignKey("CouponId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Fidelity.Domain.Entities.PuntoVendita", "PuntoVenditaUtilizzo")
                         .WithMany()
@@ -818,14 +838,12 @@ namespace Fidelity.Infrastructure.Migrations
                     b.HasOne("Fidelity.Domain.Entities.PuntoVendita", "PuntoVendita")
                         .WithMany("ResponsabilePuntiVendita")
                         .HasForeignKey("PuntoVenditaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Fidelity.Domain.Entities.Responsabile", "Responsabile")
                         .WithMany("ResponsabilePuntiVendita")
                         .HasForeignKey("ResponsabileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("PuntoVendita");
 
@@ -837,14 +855,12 @@ namespace Fidelity.Infrastructure.Migrations
                     b.HasOne("Fidelity.Domain.Entities.PuntoVendita", "PuntoVendita")
                         .WithMany()
                         .HasForeignKey("PuntoVenditaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Fidelity.Domain.Entities.Responsabile", "Responsabile")
                         .WithMany("TokenRegistrazioniCreati")
                         .HasForeignKey("ResponsabileId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("PuntoVendita");
 
@@ -856,8 +872,7 @@ namespace Fidelity.Infrastructure.Migrations
                     b.HasOne("Fidelity.Domain.Entities.Cliente", "Cliente")
                         .WithMany("Transazioni")
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Fidelity.Domain.Entities.CouponAssegnato", "CouponAssegnato")
                         .WithOne("TransazioneUtilizzo")
@@ -867,8 +882,7 @@ namespace Fidelity.Infrastructure.Migrations
                     b.HasOne("Fidelity.Domain.Entities.PuntoVendita", "PuntoVendita")
                         .WithMany("Transazioni")
                         .HasForeignKey("PuntoVenditaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Fidelity.Domain.Entities.Responsabile", "Responsabile")
                         .WithMany("Transazioni")

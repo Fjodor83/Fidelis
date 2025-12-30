@@ -1,4 +1,5 @@
 ﻿using Fidelity.Application.Common.Interfaces;
+using Fidelity.Infrastructure.Persistence.Repositories;
 using Fidelity.Infrastructure.Persistence;
 using Fidelity.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,13 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+
+        // Repositories & Unit of Work
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IClienteRepository, ClienteRepository>();
+        services.AddScoped<ICouponRepository, CouponRepository>();
+        services.AddScoped<ITransazioneRepository, TransazioneRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Services
         services.AddScoped<IJwtService, JwtService>();

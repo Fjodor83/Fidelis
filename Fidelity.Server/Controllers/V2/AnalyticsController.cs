@@ -4,16 +4,16 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Fidelity.Server.Controllers;
+namespace Fidelity.Server.Controllers.V2;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v2/[controller]")]
 [Authorize(Roles = "Admin,Responsabile")]
-public class AnalyticsV2Controller : ControllerBase
+public class AnalyticsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public AnalyticsV2Controller(IMediator mediator)
+    public AnalyticsController(IMediator mediator)
     {
         _mediator = mediator;
     }

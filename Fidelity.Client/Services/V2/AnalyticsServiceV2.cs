@@ -14,6 +14,6 @@ public class AnalyticsServiceV2
 
     public async Task<DashboardStatsDto?> GetDashboardStatsAsync()
     {
-        return await _httpClient.GetFromJsonAsync<DashboardStatsDto>("api/analyticsv2/dashboard");
+        return await _httpClient.GetFromJsonAsync<DashboardStatsDto>("api/v2/analytics/dashboard");
     }
 }

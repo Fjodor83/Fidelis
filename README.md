@@ -1,132 +1,75 @@
-# Suns Fidelity System - Documentation
+# Suns Fidelity System
 
-## Project Overview
-**Suns Fidelity** is a customer loyalty and rewards management system built for **Suns Zero & Company**. It allows store managers to register customers, assign points for purchases, and manage coupons. Customers can view their digital fidelity card, check their points balance, and redeem coupons.
+![Build Status](https://img.shields.io/badge/build-success-brightgreen)
+![Net Version](https://img.shields.io/badge/.NET-10.0-purple)
+![Architecture](https://img.shields.io/badge/architecture-Clean-blue)
 
-## Technology Stack
-- **Framework**: .NET 10 (Preview)
-- **Frontend**: Blazor WebAssembly (WASM)
-- **Backend**: ASP.NET Core Web API
-- **Database**: SQL Server
-- **ORM**: Entity Framework Core
-- **Authentication**: JWT (JSON Web Tokens)
-- **Styling**: Bootstrap 5 + Custom CSS (Mobile-First)
+Suns Fidelity is a comprehensive customer loyalty management system designed with **Clean Architecture** principles and **ISO 25000** quality standards.
 
----
+## 🏗 Architecture
 
-## Architecture
-The project follows a **Lean Architecture** pattern, emphasizing loose coupling and testability.
+The solution follows a strict **Clean Architecture** separation:
 
-### 1. Fidelity.Shared
-Contains DTOs (Data Transfer Objects) and data models used by both Client and Server.
-- **DTOs**: `TransazioneResponse`, `ClienteDettaglioResponse`, `CouponDTO`, etc.
-- **Models**: `Cliente`, `Transazione`, `PuntoVendita`, `Responsabile`.
+1.  **Fidelity.Domain**: 
+    *   Enterprise logic and types (Entities, Enums, Exceptions).
+    *   **Specification Pattern**: Reusable query logic (`ISpecification<T>`).
+2.  **Fidelity.Application**: 
+    *   Business logic and orchestration (CQRS with MediatR).
+    *   **Behaviors**: Cross-cutting concerns like Caching and Idempotency.
+3.  **Fidelity.Infrastructure**: 
+    *   External concerns (EF Core, Email, File System).
+    *   **Repository Pattern**: Concrete implementation of data access.
+4.  **Fidelity.Server**: 
+    *   API Gateway and Controllers.
+    *   **ApiControllerBase**: Standardized API responses (`Result<T>`).
+5.  **Fidelity.Client**: 
+    *   Blazor WebAssembly UI.
 
-### 2. Fidelity.Server
-The backend API responsible for business logic and data access.
-- **Controllers**: Handle HTTP requests and delegate logic to services.
-    - `AuthController`: Login & Token generation.
-    - `TransazioniController`: Points assignment & history.
-    - `CouponsController`: Coupon CRUD & redemption (delegates to `ICouponService`).
-    - `ClientiController`: Customer search & profile (delegates to `IClienteService`).
-    - `PuntiVenditaController`: Store management (uses AutoMapper).
-    - `ResponsabiliController`: Manager accounts (uses AutoMapper).
-    - `RegistrazioneController`: Email verification & customer sign-up (delegates to `ICardGeneratorService`).
-    - `AnalyticsController`: Admin dashboards stats (delegates to `IAnalyticsService`).
-- **Services**: Encapsulate core business logic.
-    - `TransazioneService`: Handles points calculation and email notifications.
-    - `CouponService`: Manages coupon lifecycle and assignment.
-    - `CardGeneratorService`: Generates digital fidelity cards (System.Drawing).
-    - `EmailService`: Sends transactional emails via MailKit/MimeKit.
-- **Utilities**:
-    - **AutoMapper**: Standardizes object mapping (`MappingProfile.cs`).
-    - **System.Drawing**: Used with `SupportedOSPlatform("windows")` for image generation.
+## 🚀 Key Features
 
-### 3. Fidelity.Client
-The Blazor WebAssembly frontend.
-- **Layouts**: `MainLayout` (Admin/Manager), `CustomerLayout` (Public/Customer).
-- **Pages**:
-    - `Dashboard.razor`: Admin overview (Tabs for Stores, Managers, Transactions).
-    - `AssegnaPunti.razor`: Manager tool to assign points.
-    - `CustomerDashboard.razor`: Customer points view.
-    - `MyCoupons.razor`: Customer coupon wallet.
-- **Responsiveness**: Uses custom `app.css` classes (`table-mobile-cards`, `nav-tabs-scrollable`) for optimal mobile experience.
+### Design Patterns Implemented
+*   **Repository & Unit of Work**: Decouples business logic from data access.
+*   **CQRS (Command Query Responsibility Segregation)**: Separates read and write operations using MediatR.
+*   **Specification Pattern**: Encapsulates complex query rules (e.g., `active customers with > 100 points`).
+*   **Pipeline Behaviors**: 
+    *   `CachingBehavior`: Automatic caching for high-performance queries.
+    *   `IdempotencyBehavior`: Prevents duplicate transaction processing.
+    *   `ValidationBehavior`: Automatic FluentValidation execution.
 
----
+### API Capabilities
+*   **Versioning**: Semantic versioning supported (currently `v2.0`).
+*   **Health Checks**: Real-time system monitoring at `/health`.
+*   **Standardized Responses**: consistent JSON envelope via `Result<T>`.
 
-## Setup & Deployment
+## 🛠 Getting Started
 
 ### Prerequisites
-- .NET 10 SDK
-- SQL Server (LocalDB or Standard)
+*   .NET 10.0 SDK
+*   SQL Server (LocalDB or Docker)
 
-### Configuration
-Update `appsettings.json` in `Fidelity.Server`:
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=FidelisDB;Trusted_Connection=True;MultipleActiveResultSets=true"
-  },
-  "Jwt": {
-    "Key": "YOUR_SUPER_SECRET_KEY_MIN_32_CHARS",
-    "Issuer": "FidelityServer",
-    "Audience": "FidelityClient"
-  },
-  "Smtp": {
-    "Host": "smtp.example.com",
-    "Port": 587,
-    "Username": "apikey",
-    "Password": "..."
-  },
-  "AppUrl": "https://localhost:7196"
-}
-```
-
-### Running Locally
-1.  **Database**:
-    ```powershell
-    dotnet ef database update --project Fidelity.Server
+### Installation
+1.  Clone the repository.
+2.  Update connection string in `appsettings.json`.
+3.  Run migrations:
+    ```bash
+    dotnet ef database update --project src/Infrastructure/Fidelity.Infrastructure --startup-project Fidelity.Server
     ```
-2.  **Server & Client**:
-    ```powershell
+4.  Start the Server:
+    ```bash
     dotnet run --project Fidelity.Server
     ```
-    The app will launch at `https://localhost:7196` (or configured port).
 
-### Deployment
-1.  **Build**:
-    ```powershell
-    dotnet publish Fidelity.Server -c Release -o ./publish
-    ```
-2.  **Deploy**:
-    - Copy the contents of `./publish` to your Windows Server / IIS or Hosting Provider (e.g., MonsterASP).
-    - Ensure the database connection string in `appsettings.json` points to the production DB.
+## 🔍 API Documentation
 
----
+Swagger UI is available in development mode at:
+*   `https://localhost:7085/swagger`
 
-## Key Features & Workflows
+## 🧪 Quality Standards
 
-### 1. Registration Flow
-1.  Manager requests email verification for a customer via `RegistrazioneController`.
-2.  System generates a token and emails a link.
-3.  Customer clicks link, fills form (`CompletaRegistrazione`).
-4.  System creates `Cliente`, generates unique `CodiceFidelity`, creates Digital Card (PNG), and emails it.
-
-### 2. Points Assignment
-1.  Manager scans/inputs `CodiceFidelity` and Amount (€).
-2.  `TransazioneService` calculates points (1 pt / 10€ default).
-3.  Transaction recorded, Client points updated.
-4.  Email notification sent to customer.
-
-### 3. Coupon System
-1.  Admin creates coupons (active dates, discount type).
-2.  Coupons assigned to customers (manual or automated).
-3.  Customer views coupons in `MyCoupons`.
-4.  Manager "burns" (redeems) coupon via API/UI.
+This project adheres to **ISO 25000** for software quality:
+*   **Maintainability**: Modular design, DI, and clear separation of concerns.
+*   **Reliability**: Idempotency and robust error handling.
+*   **Performance**: Distributed caching and optimized queries.
 
 ---
-
-## Maintenance
-- **Tests**: Run `dotnet test` to execute unit tests (`Fidelity.Tests`).
-- **Logs**: Console logging is enabled; check stdout/stderr on server.
-- **Email**: Uses MailKit. Inspect `EmailService.cs` for template adjustments.
+*Developed by TechService for Suns*

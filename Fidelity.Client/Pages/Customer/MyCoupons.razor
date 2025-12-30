@@ -1,9 +1,11 @@
 @page "/miei-coupon"
 @layout CustomerLayout
+@using Fidelity.Client.Services
+@using Fidelity.Client.Services.Interfaces
 @using Fidelity.Shared.DTOs
-@inject HttpClient Http
+@inject IAuthService AuthService
+@inject ICouponService CouponService
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <PageTitle>I Miei Coupon - Fidelis</PageTitle>
 
@@ -20,11 +22,7 @@
 
     @if (isLoading)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Caricamento...</span>
-            </div>
-        </div>
+        <LoadingSpinner Message="Caricamento coupon..." />
     }
     else if (!coupons.Any())
     {
@@ -125,23 +123,26 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!await AuthService.IsAuthenticatedAsync())
+        {
+            Navigation.NavigateTo("/login-cliente");
+            return;
+        }
+
+        await LoadCouponsAsync();
+    }
+
+    private async Task LoadCouponsAsync()
+    {
+        isLoading = true;
+
         try
         {
-            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
-            if (string.IsNullOrEmpty(token))
-            {
-                Navigation.NavigateTo("/login-cliente");
-                return;
-            }
-
-            Http.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            coupons = await Http.GetFromJsonAsync<List<CouponAssegnatoDTO>>("api/Coupons/miei-coupon") ?? new();
+            coupons = await CouponService.GetMieiCouponAsync();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errore caricamento coupon: {ex.Message}");
+            Console.Error.WriteLine($"Error loading coupons: {ex.Message}");
         }
         finally
         {

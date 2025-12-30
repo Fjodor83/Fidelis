@@ -47,6 +47,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     // Authentication
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    
+    // System
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -24,6 +24,9 @@ public interface IApplicationDbContext
 
     // Authentication
     DbSet<RefreshToken> RefreshTokens { get; }
+    
+    // System
+    DbSet<IdempotencyRecord> IdempotencyRecords { get; }
 
     // Operations
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

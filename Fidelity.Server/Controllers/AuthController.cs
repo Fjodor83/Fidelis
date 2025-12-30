@@ -24,15 +24,18 @@ namespace Fidelity.Server.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ISender _sender;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             ApplicationDbContext context, 
             IConfiguration configuration,
-            ISender sender)
+            ISender sender,
+            ILogger<AuthController> logger)
         {
             _context = context;
             _configuration = configuration;
             _sender = sender;
+            _logger = logger;
         }
 
 
@@ -113,11 +116,11 @@ namespace Fidelity.Server.Controllers
                     RefreshToken = refreshToken,
                     ResponsabileId = responsabile.Id,
                     Username = responsabile.Username,
-                    NomeCompleto = responsabile.NomeCompleto,
+                    NomeCompleto = responsabile.NomeCompleto ?? string.Empty,
                     Ruolo = responsabile.Ruolo,
                     PuntoVenditaId = primoPuntoVendita?.Id,
-                    PuntoVenditaCodice = primoPuntoVendita?.Codice,
-                    PuntoVenditaNome = primoPuntoVendita?.Nome,
+                    PuntoVenditaCodice = primoPuntoVendita?.Codice ?? string.Empty,
+                    PuntoVenditaNome = primoPuntoVendita?.Nome ?? string.Empty,
                     RichiestaResetPassword = responsabile.RichiestaResetPassword,
                     ProfiloIncompleto = string.IsNullOrWhiteSpace(responsabile.NomeCompleto),
                     Messaggio = "Login effettuato con successo."
@@ -125,6 +128,7 @@ namespace Fidelity.Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Errore durante il login per {Username}", request.Username);
                 return StatusCode(500, new LoginResponse
                 {
                     Success = false,
@@ -167,6 +171,7 @@ namespace Fidelity.Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Errore durante il cambio password");
                 return StatusCode(500, new { success = false, messaggio = "Errore durante il cambio password." });
             }
         }
@@ -213,6 +218,7 @@ namespace Fidelity.Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Errore durante il cambio password cliente");
                 return StatusCode(500, new { success = false, messaggio = "Errore durante il cambio password." });
             }
         }
@@ -247,6 +253,7 @@ namespace Fidelity.Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Errore durante il completamento del profilo");
                 return StatusCode(500, new { success = false, messaggio = "Errore durante il completamento del profilo." });
             }
         }
@@ -378,7 +385,7 @@ namespace Fidelity.Server.Controllers
 
                 var result = await _sender.Send(command);
 
-                if (!result.Succeeded)
+                if (!result.Succeeded || result.Data == null)
                 {
                     return BadRequest(new { success = false, messaggio = string.Join(", ", result.Errors) });
                 }

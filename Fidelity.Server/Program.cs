@@ -11,6 +11,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Serilog;
 using Fidelity.Infrastructure;
+using Asp.Versioning;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+using System.Reflection;
+
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -43,8 +49,28 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     builder.Services.AddControllersWithViews();
+    
+    // API Versioning
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(2, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = ApiVersionReader.Combine(
+            new UrlSegmentApiVersionReader(),
+            new HeaderApiVersionReader("X-Api-Version")
+        );
+    }).AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    });
+
+    // Health Checks
     builder.Services.AddHealthChecks()
-        .AddDbContextCheck<ApplicationDbContext>();
+        .AddDbContextCheck<ApplicationDbContext>("database");
+        // Add other checks here (Redis, Email etc.) if services existed
+    
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
     builder.Services.AddRazorPages();
@@ -115,7 +141,24 @@ try
 
     // Swagger/OpenAPI Configuration
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(); // Advanced config commented out due to Microsoft.OpenApi.Models dependency issue in net10.0 env
+    /*
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v2", new OpenApiInfo
+        {
+            Title = "Suns Fidelity API",
+            Version = "v2.0",
+            Description = "Customer Loyalty Management System - Clean Architecture",
+            Contact = new OpenApiContact
+            {
+                Name = "Suns Team",
+                Email = "support@suns.com"
+            }
+        });
+        // ... JWT config ...
+    });
+    */
 
     var app = builder.Build();
 
@@ -149,7 +192,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Suns Fidelity API V1");
+            c.SwaggerEndpoint("/swagger/v2/swagger.json", "Suns Fidelity API V2");
             c.RoutePrefix = "swagger";
         });
     }
@@ -179,7 +222,28 @@ try
 
     app.MapRazorPages();
     app.MapControllers();
-    app.MapHealthChecks("/health");
+    app.MapControllers();
+    
+    app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.TotalMilliseconds
+                }),
+                totalDuration = report.TotalDuration.TotalMilliseconds
+            });
+            await context.Response.WriteAsync(result);
+        }
+    });
     // Fallback for Blazor WASM
     app.MapFallbackToFile("index.html");
 

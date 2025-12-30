@@ -20,7 +20,7 @@ public class AuthServiceV2
             Password = password
         };
 
-        var response = await _httpClient.PostAsJsonAsync("api/authv2/login", request);
+        var response = await _httpClient.PostAsJsonAsync("api/v2/auth/login", request);
 
         if (!response.IsSuccessStatusCode)
             return null;

@@ -23,19 +23,22 @@ namespace Fidelity.Server.Controllers
         private readonly ICardGeneratorService _cardGenerator;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly ILogger<RegistrazioneController> _logger;
 
         public RegistrazioneController(
             ApplicationDbContext context,
             IEmailService emailService,
             ICardGeneratorService cardGenerator,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<RegistrazioneController> logger)
         {
             _context = context;
             _emailService = emailService;
             _cardGenerator = cardGenerator;
             _configuration = configuration;
             _mapper = mapper;
+            _logger = logger;
         }
 
         /// <summary>
@@ -130,12 +133,13 @@ namespace Fidelity.Server.Controllers
                     EmailInviata = emailInviata
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Errore durante la verifica email: {Message}", ex.Message);
                 return StatusCode(500, new VerificaEmailResponse
                 {
                     Valida = false,
-                    Messaggio = "Errore durante la verifica email.",
+                    Messaggio = $"Errore interno: {ex.Message} {ex.InnerException?.Message}",
                     EmailInviata = false
                 });
             }

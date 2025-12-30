@@ -1,0 +1,40 @@
+@inject Fidelity.Client.State.NotificationService NotificationService
+@implements IDisposable
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="toast show position-fixed bottom-0 end-0 p-3 m-3 bg-@Type text-white" role="alert">
+        <div class="toast-body">
+            @Message
+        </div>
+    </div>
+}
+
+@code {
+    private string? Message;
+    private string Type = "success";
+
+    protected override void OnInitialized()
+    {
+        NotificationService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(string message, string type)
+    {
+        Message = message;
+        Type = type;
+        StateHasChanged();
+        
+        // Auto hide
+        Task.Delay(3000).ContinueWith(_ => 
+        {
+            Message = null;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    public void Dispose()
+    {
+        NotificationService.OnShow -= ShowToast;
+    }
+}
